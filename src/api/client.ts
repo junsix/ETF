@@ -96,6 +96,16 @@ export const api = {
   getTopVolume: (date: string, limit = 10) =>
     fetchJSON<Array<{ticker: string; date: string; open: number; high: number; low: number; close: number; volume: number}>>(`/api/prices/top-volume?target_date=${date}&limit=${limit}`),
 
+  analyzePortfolio: (items: Array<{ticker: string; weight: number}>) =>
+    fetch(`${BASE_URL}/api/portfolio/analyze`, {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({ items }),
+    }).then(res => {
+      if (!res.ok) throw new Error(`API error: ${res.status}`);
+      return res.json();
+    }),
+
   getMarketIndicators: () =>
     fetchJSON<{
       indices: Array<{

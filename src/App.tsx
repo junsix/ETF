@@ -6,6 +6,7 @@ import Dividend from "./pages/Dividend";
 import Company from "./pages/Company";
 import Market from "./pages/Market";
 import About from "./pages/About";
+import Portfolio from "./pages/Portfolio";
 
 function NavLink({ to, children }: { to: string; children: React.ReactNode }) {
   const location = useLocation();
@@ -36,6 +37,7 @@ function Layout() {
           <NavLink to="/">스크리닝</NavLink>
           <NavLink to="/compare">비교</NavLink>
           <NavLink to="/dividend">배당</NavLink>
+          <NavLink to="/portfolio">포트폴리오</NavLink>
           <NavLink to="/market">시장</NavLink>
           <NavLink to="/about">안내</NavLink>
         </div>
@@ -45,6 +47,7 @@ function Layout() {
         <Route path="/etf/:ticker" element={<ETFDetail />} />
         <Route path="/compare" element={<ETFCompare />} />
         <Route path="/dividend" element={<Dividend />} />
+        <Route path="/portfolio" element={<Portfolio />} />
         <Route path="/market" element={<Market />} />
         <Route path="/company/:name" element={<Company />} />
         <Route path="/about" element={<About />} />
