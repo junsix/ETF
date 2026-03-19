@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, Link, useLocation } from "react-router-dom";
+import { HashRouter, Routes, Route, Link, useLocation } from "react-router-dom";
 import ETFList from "./pages/ETFList";
 import ETFDetail from "./pages/ETFDetail";
 import ETFCompare from "./pages/ETFCompare";
@@ -58,8 +58,8 @@ function Layout() {
 
 export default function App() {
   return (
-    <BrowserRouter>
+    <HashRouter>
       <Layout />
-    </BrowserRouter>
+    </HashRouter>
   );
 }
