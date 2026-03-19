@@ -8,6 +8,7 @@ import type {
   RankingResponse,
   DividendRankingResponse,
   ThemesResponse,
+  CorrelationResponse,
 } from "./types";
 
 const BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8080";
@@ -102,6 +103,16 @@ export const api = {
       headers: {"Content-Type": "application/json"},
       body: JSON.stringify({ items }),
     }).then(res => {
+      if (!res.ok) throw new Error(`API error: ${res.status}`);
+      return res.json();
+    }),
+
+  getPortfolioCorrelation: (tickers: string[]): Promise<CorrelationResponse> =>
+    fetch(`${BASE_URL}/api/portfolio/correlation`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ tickers }),
+    }).then((res) => {
       if (!res.ok) throw new Error(`API error: ${res.status}`);
       return res.json();
     }),

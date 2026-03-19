@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { createChart, LineSeries } from "lightweight-charts";
 import { api } from "../api/client";
-import type { ETF, ETFListResponse } from "../api/types";
+import type { ETF, ETFListResponse, CorrelationResponse } from "../api/types";
 import HelpTip from "../components/HelpTip";
+import CorrelationHeatmap from "../components/CorrelationHeatmap";
 
 interface PortfolioETF {
   ticker: string;
@@ -123,6 +124,7 @@ export default function Portfolio() {
   const [searching, setSearching] = useState(false);
   const [portfolio, setPortfolio] = useState<PortfolioETF[]>([]);
   const [result, setResult] = useState<AnalysisResult | null>(null);
+  const [correlation, setCorrelation] = useState<CorrelationResponse | null>(null);
   const [analyzing, setAnalyzing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const mountedRef = useRef(true);
@@ -221,14 +223,29 @@ export default function Portfolio() {
     if (!isWeightValid || portfolio.length === 0) return;
     setAnalyzing(true);
     setError(null);
+    setCorrelation(null);
     try {
       const items = portfolio.map((p) => ({
         ticker: p.ticker,
         weight: p.weight,
       }));
-      const res = await api.analyzePortfolio(items);
+      const tickers = portfolio.map((p) => p.ticker);
+
+      // 포트폴리오 분석 + 상관관계 동시 요청
+      const [analysisRes, corrRes] = await Promise.allSettled([
+        api.analyzePortfolio(items),
+        tickers.length >= 2 ? api.getPortfolioCorrelation(tickers) : Promise.resolve(null),
+      ]);
+
       if (mountedRef.current) {
-        setResult(res);
+        if (analysisRes.status === "fulfilled") {
+          setResult(analysisRes.value);
+        } else {
+          throw new Error(analysisRes.reason?.message || "분석에 실패했습니다");
+        }
+        if (corrRes.status === "fulfilled" && corrRes.value) {
+          setCorrelation(corrRes.value);
+        }
       }
     } catch (err: any) {
       if (mountedRef.current) {
@@ -507,6 +524,20 @@ export default function Portfolio() {
                     누적 수익률 (%)
                   </h2>
                   <CumulativeChart data={result.cumulative_returns} />
+                </div>
+              )}
+
+              {/* Correlation heatmap */}
+              {correlation && portfolio.length >= 2 && (
+                <div className="mb-6">
+                  <CorrelationHeatmap
+                    tickers={correlation.tickers}
+                    names={correlation.tickers.map(
+                      (t) => portfolio.find((p) => p.ticker === t)?.name || t
+                    )}
+                    matrix={correlation.matrix}
+                    tailMatrix={correlation.tail_matrix}
+                  />
                 </div>
               )}
 

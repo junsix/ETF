@@ -131,3 +131,9 @@ export interface DividendRankingResponse {
   size: number;
   items: DividendRankingItem[];
 }
+
+export interface CorrelationResponse {
+  tickers: string[];
+  matrix: number[][];       // NxN 피어슨 상관계수
+  tail_matrix: number[][];  // NxN 꼬리 상관계수 (하위 5% 수익률 구간)
+}
