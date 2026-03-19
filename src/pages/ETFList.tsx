@@ -220,6 +220,7 @@ export default function ETFList() {
               <th className="text-right px-3 py-3 font-semibold text-gray-700">1개월</th>
               <th className="text-right px-3 py-3 font-semibold text-gray-700">3개월</th>
               <th className="text-right px-3 py-3 font-semibold text-gray-700">1년</th>
+              <th className="text-right px-3 py-3 font-semibold text-gray-700">상장일</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
@@ -289,12 +290,15 @@ export default function ETFList() {
                     >
                       {formatReturn(item.returns["1y"])}
                     </td>
+                    <td className="px-3 py-3 text-right text-gray-400 text-xs">
+                      {item.listed_date || "-"}
+                    </td>
                   </tr>
                 ))}
             {!loading && filtered.length === 0 && (
               <tr>
                 <td
-                  colSpan={8}
+                  colSpan={9}
                   className="px-3 py-8 text-center text-gray-400"
                 >
                   검색 결과가 없습니다
