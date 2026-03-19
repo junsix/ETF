@@ -74,6 +74,7 @@ export interface RankingItem {
   management_company: string | null;
   category: string | null;
   theme: string | null;
+  listed_date: string | null;
   close: number;
   volume: number;
   returns: ReturnsData;

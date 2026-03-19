@@ -11,6 +11,7 @@ const SORT_OPTIONS = [
   { value: "returns_6m", label: "6개월 수익률" },
   { value: "returns_1y", label: "1년 수익률" },
   { value: "volume", label: "거래량" },
+  { value: "listed_date", label: "상장일" },
 ];
 
 const CATEGORIES = [
