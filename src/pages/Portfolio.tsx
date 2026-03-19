@@ -17,6 +17,8 @@ interface IndividualStat {
   annual_return: number;
   annual_volatility: number;
   sharpe_ratio: number;
+  total_annual_return?: number;
+  total_sharpe_ratio?: number;
 }
 
 interface AnalysisResult {
@@ -561,10 +563,16 @@ export default function Portfolio() {
                             연 수익률
                           </th>
                           <th className="text-right px-4 py-2.5 font-semibold text-gray-700">
+                            배당 포함
+                          </th>
+                          <th className="text-right px-4 py-2.5 font-semibold text-gray-700">
                             연 변동성
                           </th>
                           <th className="text-right px-4 py-2.5 font-semibold text-gray-700">
-                            샤프 비율
+                            샤프
+                          </th>
+                          <th className="text-right px-4 py-2.5 font-semibold text-gray-700">
+                            샤프 (배당)
                           </th>
                         </tr>
                       </thead>
@@ -573,6 +581,8 @@ export default function Portfolio() {
                           const etf = portfolio.find(
                             (p) => p.ticker === item.ticker
                           );
+                          const totalReturn = item.total_annual_return ?? item.annual_return;
+                          const totalSharpe = item.total_sharpe_ratio ?? item.sharpe_ratio;
                           return (
                             <tr
                               key={item.ticker}
@@ -599,6 +609,16 @@ export default function Portfolio() {
                                 {item.annual_return >= 0 ? "+" : ""}
                                 {item.annual_return.toFixed(2)}%
                               </td>
+                              <td
+                                className={`px-4 py-2.5 text-right font-mono ${
+                                  totalReturn >= 0
+                                    ? "text-red-600"
+                                    : "text-blue-600"
+                                }`}
+                              >
+                                {totalReturn >= 0 ? "+" : ""}
+                                {totalReturn.toFixed(2)}%
+                              </td>
                               <td className="px-4 py-2.5 text-right font-mono text-gray-700">
                                 {item.annual_volatility.toFixed(2)}%
                               </td>
@@ -608,6 +628,13 @@ export default function Portfolio() {
                                 )}`}
                               >
                                 {item.sharpe_ratio.toFixed(2)}
+                              </td>
+                              <td
+                                className={`px-4 py-2.5 text-right font-mono font-medium ${sharpeColor(
+                                  totalSharpe
+                                )}`}
+                              >
+                                {totalSharpe.toFixed(2)}
                               </td>
                             </tr>
                           );
@@ -630,6 +657,16 @@ export default function Portfolio() {
                             {result.annual_return >= 0 ? "+" : ""}
                             {result.annual_return.toFixed(2)}%
                           </td>
+                          <td
+                            className={`px-4 py-2.5 text-right font-mono ${
+                              result.total_annual_return >= 0
+                                ? "text-red-600"
+                                : "text-blue-600"
+                            }`}
+                          >
+                            {result.total_annual_return >= 0 ? "+" : ""}
+                            {result.total_annual_return.toFixed(2)}%
+                          </td>
                           <td className="px-4 py-2.5 text-right font-mono text-gray-800">
                             {result.annual_volatility.toFixed(2)}%
                           </td>
@@ -639,6 +676,13 @@ export default function Portfolio() {
                             )}`}
                           >
                             {result.sharpe_ratio.toFixed(2)}
+                          </td>
+                          <td
+                            className={`px-4 py-2.5 text-right font-mono ${sharpeColor(
+                              result.total_sharpe_ratio
+                            )}`}
+                          >
+                            {result.total_sharpe_ratio.toFixed(2)}
                           </td>
                         </tr>
                       </tbody>
