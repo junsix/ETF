@@ -92,6 +92,9 @@ export const api = {
       total_returns: Record<string, number | null>;
     }>(`/api/etfs/naver-returns/${ticker}`),
 
+  getTopVolume: (date: string, limit = 10) =>
+    fetchJSON<Array<{ticker: string; date: string; open: number; high: number; low: number; close: number; volume: number}>>(`/api/prices/top-volume?target_date=${date}&limit=${limit}`),
+
   getMarketIndicators: () =>
     fetchJSON<{
       indices: Array<{

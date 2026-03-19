@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useParams, Link } from "react-router-dom";
-import { createChart, CandlestickSeries } from "lightweight-charts";
+import { createChart, CandlestickSeries, HistogramSeries } from "lightweight-charts";
+import type { Time } from "lightweight-charts";
 import { api } from "../api/client";
 import type {
   ETF,
@@ -246,6 +247,21 @@ function CandlestickChart({ prices }: { prices: DailyPrice[] }) {
         high: p.high,
         low: p.low,
         close: p.close,
+      }))
+    );
+
+    const volumeSeries = chart.addSeries(HistogramSeries, {
+      priceFormat: { type: "volume" },
+      priceScaleId: "volume",
+    });
+    chart.priceScale("volume").applyOptions({
+      scaleMargins: { top: 0.8, bottom: 0 },
+    });
+    volumeSeries.setData(
+      sorted.map((p) => ({
+        time: p.date as Time,
+        value: p.volume,
+        color: p.close >= p.open ? "rgba(239,68,68,0.3)" : "rgba(59,130,246,0.3)",
       }))
     );
 

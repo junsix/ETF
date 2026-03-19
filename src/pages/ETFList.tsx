@@ -42,10 +42,17 @@ function formatNumber(val: number | null): string {
   return val.toLocaleString("ko-KR");
 }
 
+function formatVolume(vol: number): string {
+  if (vol >= 1_000_000_000) return `${(vol / 1_000_000_000).toFixed(1)}B`;
+  if (vol >= 1_000_000) return `${(vol / 1_000_000).toFixed(1)}M`;
+  if (vol >= 1_000) return `${(vol / 1_000).toFixed(0)}K`;
+  return String(vol);
+}
+
 function SkeletonRow() {
   return (
     <tr className="animate-pulse">
-      {Array.from({ length: 8 }).map((_, i) => (
+      {Array.from({ length: 10 }).map((_, i) => (
         <td key={i} className="px-3 py-3">
           <div className="h-4 bg-gray-200 rounded w-full" />
         </td>
@@ -220,6 +227,7 @@ export default function ETFList() {
               <th className="text-right px-3 py-3 font-semibold text-gray-700">1개월</th>
               <th className="text-right px-3 py-3 font-semibold text-gray-700">3개월</th>
               <th className="text-right px-3 py-3 font-semibold text-gray-700">1년</th>
+              <th className="text-right px-3 py-3 font-semibold text-gray-700">거래량</th>
               <th className="text-right px-3 py-3 font-semibold text-gray-700">상장일</th>
             </tr>
           </thead>
@@ -290,6 +298,9 @@ export default function ETFList() {
                     >
                       {formatReturn(item.returns["1y"])}
                     </td>
+                    <td className="px-3 py-3 text-right font-mono text-gray-500">
+                      {formatVolume(item.volume)}
+                    </td>
                     <td className="px-3 py-3 text-right text-gray-400 text-xs">
                       {item.listed_date || "-"}
                     </td>
@@ -298,7 +309,7 @@ export default function ETFList() {
             {!loading && filtered.length === 0 && (
               <tr>
                 <td
-                  colSpan={9}
+                  colSpan={10}
                   className="px-3 py-8 text-center text-gray-400"
                 >
                   검색 결과가 없습니다

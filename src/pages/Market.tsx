@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import { api } from "../api/client";
 import HelpTip from "../components/HelpTip";
 
@@ -83,10 +84,18 @@ function Section({
   );
 }
 
+function formatVolume(vol: number): string {
+  if (vol >= 1_000_000_000) return `${(vol / 1_000_000_000).toFixed(1)}B`;
+  if (vol >= 1_000_000) return `${(vol / 1_000_000).toFixed(1)}M`;
+  if (vol >= 1_000) return `${(vol / 1_000).toFixed(0)}K`;
+  return String(vol);
+}
+
 export default function Market() {
   const [data, setData] = useState<MarketData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [topVolume, setTopVolume] = useState<Array<{ticker: string; volume: number}>>([]);
 
   useEffect(() => {
     let cancelled = false;
@@ -103,6 +112,14 @@ export default function Market() {
       .finally(() => {
         if (!cancelled) setLoading(false);
       });
+
+    const today = new Date().toISOString().slice(0, 10);
+    api.getTopVolume(today, 10)
+      .then((items) => {
+        if (!cancelled) setTopVolume(items.map((d) => ({ ticker: d.ticker, volume: d.volume })));
+      })
+      .catch(() => {});
+
     return () => {
       cancelled = true;
     };
@@ -197,6 +214,38 @@ export default function Market() {
             </div>
           )}
         </div>
+      </Section>
+
+      {/* 거래량 TOP 10 */}
+      <Section title="거래량 TOP 10">
+        {topVolume.length > 0 ? (
+          <div className="border border-gray-200 rounded-lg overflow-hidden bg-white">
+            <table className="w-full text-sm">
+              <thead className="bg-gray-50 border-b border-gray-200">
+                <tr>
+                  <th className="text-center px-4 py-2.5 font-semibold text-gray-600 w-12">#</th>
+                  <th className="text-left px-4 py-2.5 font-semibold text-gray-600">티커</th>
+                  <th className="text-right px-4 py-2.5 font-semibold text-gray-600">거래량</th>
+                </tr>
+              </thead>
+              <tbody>
+                {topVolume.map((item, idx) => (
+                  <tr key={item.ticker} className="border-b border-gray-100 last:border-b-0 hover:bg-gray-50">
+                    <td className="text-center px-4 py-2.5 font-mono text-gray-400">{idx + 1}</td>
+                    <td className="px-4 py-2.5 font-mono">
+                      <Link to={`/etf/${item.ticker}`} className="text-blue-600 hover:underline">
+                        {item.ticker}
+                      </Link>
+                    </td>
+                    <td className="px-4 py-2.5 text-right font-mono text-gray-700">{formatVolume(item.volume)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <div className="text-center text-gray-400 py-4">데이터 없음</div>
+        )}
       </Section>
     </div>
   );
