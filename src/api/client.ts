@@ -49,7 +49,7 @@ export const api = {
       `/api/etfs/compare?tickers=${tickers.join(",")}&metric=${metric}`
     ),
 
-  ranking: (sortBy = "returns_1m", order = "desc", page = 1, size = 20, category?: string, theme?: string) => {
+  ranking: (sortBy = "returns_1m", order = "desc", page = 1, size = 20, category?: string, theme?: string, search?: string) => {
     const q = new URLSearchParams({
       sort_by: sortBy,
       order,
@@ -58,6 +58,7 @@ export const api = {
     });
     if (category) q.set("category", category);
     if (theme) q.set("theme", theme);
+    if (search) q.set("search", search);
     return fetchJSON<RankingResponse>(`/api/etfs/ranking?${q}`);
   },
 

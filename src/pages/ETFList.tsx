@@ -68,11 +68,21 @@ export default function ETFList() {
   const [sortBy, setSortBy] = useState("returns_1m");
   const [order, setOrder] = useState<"desc" | "asc">("desc");
   const [page, setPage] = useState(1);
+  const [searchInput, setSearchInput] = useState("");
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState("");
   const [theme, setTheme] = useState("");
   const [themes, setThemes] = useState<ThemeItem[]>([]);
   const size = 20;
+
+  // Debounce search input
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setSearch(searchInput);
+      setPage(1);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchInput]);
 
   // Fetch themes when category changes
   useEffect(() => {
@@ -87,7 +97,7 @@ export default function ETFList() {
     setLoading(true);
     setError(null);
     api
-      .ranking(sortBy, order, page, size, category || undefined, theme || undefined)
+      .ranking(sortBy, order, page, size, category || undefined, theme || undefined, search || undefined)
       .then((res) => {
         if (!cancelled) setData(res);
       })
@@ -100,15 +110,9 @@ export default function ETFList() {
     return () => {
       cancelled = true;
     };
-  }, [sortBy, order, page, category, theme]);
+  }, [sortBy, order, page, category, theme, search]);
 
-  const filtered: RankingItem[] = data
-    ? data.items.filter(
-        (item) =>
-          item.name.toLowerCase().includes(search.toLowerCase()) ||
-          item.ticker.includes(search)
-      )
-    : [];
+  const filtered: RankingItem[] = data ? data.items : [];
 
   const totalPages = data ? Math.ceil(data.total / size) : 0;
 
@@ -177,8 +181,8 @@ export default function ETFList() {
         <input
           type="text"
           placeholder="이름 또는 티커 검색..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
+          value={searchInput}
+          onChange={(e) => setSearchInput(e.target.value)}
           className="border border-gray-300 rounded px-3 py-2 text-sm w-64 focus:outline-none focus:ring-2 focus:ring-blue-400"
         />
         <select
