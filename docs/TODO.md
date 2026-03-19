@@ -27,9 +27,13 @@
   - 평시/꼬리 탭 전환, 꼬리 상관 급등 시 자동 경고
 
 ### 필요한 백엔드 작업
-- `POST /api/portfolio/correlation` — 티커 배열 → 상관 매트릭스 + 꼬리 상관 매트릭스 반환
+- [ ] `POST /api/portfolio/correlation` — 티커 배열 → 상관 매트릭스 + 꼬리 상관 매트릭스 반환
   - 요청: `{ tickers: string[] }`
   - 응답: `{ tickers: string[], matrix: number[][], tail_matrix: number[][] }`
+- [ ] `POST /api/portfolio/analyze` — individual 배열에 배당 포함 필드 추가
+  - 현재: `annual_return`, `annual_volatility`, `sharpe_ratio`만 반환
+  - 추가 필요: `total_annual_return`, `total_sharpe_ratio` (포트폴리오 합계에서는 이미 계산 중, 개별 ETF에도 동일 로직 적용)
+  - 프론트는 반영 완료 — 백엔드에서 내려주면 바로 표시됨
 
 ---
 
