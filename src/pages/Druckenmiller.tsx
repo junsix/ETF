@@ -34,6 +34,7 @@ interface Pick {
 
 interface Decision {
   allocation: Record<string, number>;
+  allocation_reasons?: string[];
   tilts: Tilt[];
   picks: Pick[];
   risk_params: Record<string, any>;
@@ -109,10 +110,10 @@ const ALLOCATION_COLORS: Record<string, { bg: string; dot: string }> = {
   "현금": { bg: "bg-gray-400", dot: "bg-gray-400" },
 };
 
-const DIRECTION_BADGE: Record<string, string> = {
-  overweight: "bg-green-600 text-white",
-  underweight: "bg-red-600 text-white",
-  neutral: "bg-gray-500 text-white",
+const DIRECTION_BADGE: Record<string, { style: string; label: string }> = {
+  overweight: { style: "bg-green-600 text-white", label: "비중 확대" },
+  underweight: { style: "bg-red-600 text-white", label: "비중 축소" },
+  neutral: { style: "bg-gray-500 text-white", label: "중립" },
 };
 
 const MACRO_LABELS: Record<string, string> = {
@@ -200,7 +201,7 @@ function SignalCard({ signal }: { signal: Signal }) {
 }
 
 /* ---------- A. Asset Allocation Bar ---------- */
-function AllocationBar({ allocation }: { allocation: Record<string, number> }) {
+function AllocationBar({ allocation, reasons }: { allocation: Record<string, number>; reasons?: string[] }) {
   const entries = Object.entries(allocation);
   const total = entries.reduce((s, [, v]) => s + v, 0);
 
@@ -243,6 +244,15 @@ function AllocationBar({ allocation }: { allocation: Record<string, number> }) {
             );
           })}
         </div>
+        {/* Allocation reasons */}
+        {reasons && reasons.length > 0 && (
+          <div className="border-t pt-3 space-y-1">
+            <p className="text-xs font-semibold text-gray-500">배분 근거</p>
+            {reasons.map((r, i) => (
+              <p key={i} className="text-xs text-gray-600">{r}</p>
+            ))}
+          </div>
+        )}
       </CardContent>
     </Card>
   );
@@ -291,7 +301,7 @@ function SectorTilts({ tilts }: { tilts: Tilt[] }) {
       <CardContent>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           {tilts.map((tilt, i) => {
-            const dirStyle = DIRECTION_BADGE[tilt.direction] ?? "bg-gray-500 text-white";
+            const dir = DIRECTION_BADGE[tilt.direction] ?? { style: "bg-gray-500 text-white", label: tilt.direction };
             return (
               <div
                 key={i}
@@ -299,7 +309,7 @@ function SectorTilts({ tilts }: { tilts: Tilt[] }) {
               >
                 <div className="flex items-center justify-between">
                   <span className="font-semibold text-sm text-gray-900">{tilt.sector}</span>
-                  <Badge className={dirStyle}>{tilt.direction}</Badge>
+                  <Badge className={dir.style}>{dir.label}</Badge>
                 </div>
                 <div className="flex items-center gap-2 text-xs text-gray-500">
                   <span>확신도</span>
@@ -500,7 +510,7 @@ export default function Druckenmiller() {
 
           {/* A. Asset Allocation */}
           {data.decision.allocation && (
-            <AllocationBar allocation={data.decision.allocation} />
+            <AllocationBar allocation={data.decision.allocation} reasons={data.decision.allocation_reasons} />
           )}
 
           {/* B. Sector Tilts */}
