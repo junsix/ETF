@@ -127,6 +127,11 @@ export default function Portfolio() {
   const [portfolio, setPortfolio] = useState<PortfolioETF[]>([]);
   const [result, setResult] = useState<AnalysisResult | null>(null);
   const [correlation, setCorrelation] = useState<CorrelationResponse | null>(null);
+  const [overlaps, setOverlaps] = useState<Array<{
+    tickerA: string; tickerB: string; nameA: string; nameB: string;
+    commonCount: number; overlapWeightA: number; overlapWeightB: number;
+    topCommon: Array<{stock_name: string; weight_a: number; weight_b: number}>;
+  }>>([]);
   const [years, setYears] = useState(1);
   const [analyzing, setAnalyzing] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -227,6 +232,7 @@ export default function Portfolio() {
     setAnalyzing(true);
     setError(null);
     setCorrelation(null);
+    setOverlaps([]);
     try {
       const items = portfolio.map((p) => ({
         ticker: p.ticker,
@@ -248,6 +254,36 @@ export default function Portfolio() {
         }
         if (corrRes.status === "fulfilled" && corrRes.value) {
           setCorrelation(corrRes.value);
+        }
+
+        // 구성종목 겹침 분석 (ETF 쌍별)
+        if (tickers.length >= 2) {
+          const pairs: Array<[string, string]> = [];
+          for (let i = 0; i < tickers.length; i++) {
+            for (let j = i + 1; j < tickers.length; j++) {
+              pairs.push([tickers[i], tickers[j]]);
+            }
+          }
+          const overlapResults = await Promise.allSettled(
+            pairs.map(([a, b]) => api.holdingsOverlap(a, b))
+          );
+          const parsed = overlapResults
+            .map((r, idx) => {
+              if (r.status !== "fulfilled" || !r.value) return null;
+              const d = r.value;
+              return {
+                tickerA: pairs[idx][0],
+                tickerB: pairs[idx][1],
+                nameA: portfolio.find((p) => p.ticker === pairs[idx][0])?.name || pairs[idx][0],
+                nameB: portfolio.find((p) => p.ticker === pairs[idx][1])?.name || pairs[idx][1],
+                commonCount: d.common_count || 0,
+                overlapWeightA: d.total_overlap_weight_a || 0,
+                overlapWeightB: d.total_overlap_weight_b || 0,
+                topCommon: (d.overlap || []).slice(0, 5),
+              };
+            })
+            .filter((x): x is NonNullable<typeof x> => x !== null && x.commonCount > 0);
+          if (mountedRef.current) setOverlaps(parsed);
         }
       }
     } catch (err: any) {
@@ -558,6 +594,54 @@ export default function Portfolio() {
                     matrix={correlation.matrix}
                     tailMatrix={correlation.tail_matrix}
                   />
+                </div>
+              )}
+
+              {/* Holdings overlap */}
+              {overlaps.length > 0 && (
+                <div className="mb-6 border border-gray-200 rounded-lg bg-white">
+                  <div className="px-4 pt-4 pb-2">
+                    <h2 className="text-lg font-semibold text-gray-800">
+                      구성종목 겹침 분석
+                      <HelpTip text="포트폴리오 내 ETF들이 동일한 종목을 보유하고 있으면 실질적인 분산 효과가 줄어듭니다. 겹침 비중이 높을수록 두 ETF가 유사하게 움직일 가능성이 큽니다." />
+                    </h2>
+                  </div>
+                  <div className="px-4 pb-4 space-y-3">
+                    {overlaps.map((o, i) => (
+                      <div key={i} className="border border-gray-100 rounded-lg p-3">
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="text-sm font-medium text-gray-800">
+                            {o.nameA} ↔ {o.nameB}
+                          </span>
+                          <span className={`text-xs px-2 py-0.5 rounded-full ${
+                            o.commonCount >= 50 ? "bg-red-100 text-red-700" :
+                            o.commonCount >= 10 ? "bg-orange-100 text-orange-700" :
+                            "bg-green-100 text-green-700"
+                          }`}>
+                            공통 {o.commonCount}종목
+                          </span>
+                        </div>
+                        <div className="flex gap-4 text-xs text-gray-500 mb-2">
+                          <span>{o.nameA} 비중의 {o.overlapWeightA.toFixed(1)}% 겹침</span>
+                          <span>{o.nameB} 비중의 {o.overlapWeightB.toFixed(1)}% 겹침</span>
+                        </div>
+                        {o.topCommon.length > 0 && (
+                          <div className="flex flex-wrap gap-1">
+                            {o.topCommon.map((s) => (
+                              <span key={s.stock_name} className="text-[11px] px-1.5 py-0.5 bg-gray-100 text-gray-600 rounded">
+                                {s.stock_name}
+                              </span>
+                            ))}
+                            {o.commonCount > 5 && (
+                              <span className="text-[11px] px-1.5 py-0.5 text-gray-400">
+                                +{o.commonCount - 5}개
+                              </span>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
                 </div>
               )}
 
