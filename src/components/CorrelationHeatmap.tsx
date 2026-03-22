@@ -168,7 +168,7 @@ export default function CorrelationHeatmap({
       <div className="px-4 pt-4 pb-2 flex items-center justify-between flex-wrap gap-2">
         <h2 className="text-lg font-semibold text-gray-800">
           상관관계 분석
-          <HelpTip text="ETF 간 가격 움직임의 상관계수. 1에 가까울수록 같이 움직이고, -1에 가까울수록 반대로 움직입니다. 꼬리 상관은 하락 구간(하위 5%)에서의 동조 정도입니다." />
+          <HelpTip text="두 자산의 가격이 얼마나 함께 움직이는지를 -1 ~ +1로 측정합니다. +1이면 완전히 같이 움직여 분산 효과가 없고, 0이면 독립적, -1이면 반대로 움직여 분산 효과가 극대화됩니다. 포트폴리오 구성 시 상관이 낮은 자산을 조합하면 동일 수익률에서 변동성을 줄일 수 있습니다." />
         </h2>
         <div className="flex gap-1 text-xs">
           <button
@@ -180,6 +180,7 @@ export default function CorrelationHeatmap({
             }`}
           >
             평시 상관
+            <HelpTip text="피어슨 상관계수. 전체 관측 기간의 일별 수익률을 기반으로 두 자산의 선형적 동조 정도를 측정합니다. 시장이 정상적일 때의 자산 간 관계를 나타냅니다." />
           </button>
           <button
             onClick={() => setMode("tail")}
@@ -190,6 +191,7 @@ export default function CorrelationHeatmap({
             }`}
           >
             꼬리 상관
+            <HelpTip text="하위 5% 수익률 구간(극단적 하락일)에서의 상관계수입니다. 평시에는 상관이 낮아 보여도 위기 시 동반 하락하는 경우가 많습니다. 꼬리 상관이 평시보다 높다면 분산 효과가 위기 시 약화될 수 있음을 의미합니다." />
           </button>
         </div>
       </div>
@@ -241,6 +243,15 @@ export default function CorrelationHeatmap({
             ))}
           </tbody>
         </table>
+      </div>
+
+      {/* Mode description */}
+      <div className="px-4 pb-2 text-xs text-gray-500">
+        {mode === "normal" ? (
+          <p>전체 기간 일별 수익률 기반 피어슨 상관계수입니다. 0.7 이상이면 두 자산이 매우 유사하게 움직여 분산 효과가 낮고, 0.3 이하면 독립적 움직임으로 포트폴리오 분산에 효과적입니다.</p>
+        ) : (
+          <p>일별 수익률 하위 5% 구간에서의 상관계수입니다. 2008 금융위기처럼 극단적 하락장에서는 평소 무관했던 자산도 동반 급락하는 경향이 있습니다. 꼬리 상관이 평시보다 크게 높다면 위기 시 분산 효과가 크게 감소할 수 있습니다.</p>
+        )}
       </div>
 
       {/* Color legend */}
