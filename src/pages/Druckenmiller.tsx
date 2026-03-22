@@ -1,18 +1,42 @@
 import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import { api } from "@/shared/api/client";
 import { Card, CardHeader, CardTitle, CardContent } from "@/shared/ui/card";
 import { Badge } from "@/shared/ui/badge";
+import {
+  Table,
+  TableHeader,
+  TableBody,
+  TableHead,
+  TableRow,
+  TableCell,
+} from "@/shared/ui/table";
 
 interface Signal {
   type: string;
   text: string;
 }
 
-interface Recommendation {
-  category: string;
+interface Tilt {
+  sector: string;
   direction: string;
+  conviction: string;
   reason: string;
-  examples: string;
+}
+
+interface Pick {
+  asset_class: string;
+  name: string;
+  ticker: string;
+  weight: number;
+  reason: string;
+}
+
+interface Decision {
+  allocation: Record<string, number>;
+  tilts: Tilt[];
+  picks: Pick[];
+  risk_params: Record<string, any>;
 }
 
 interface DruckenmillerData {
@@ -20,7 +44,7 @@ interface DruckenmillerData {
   overall_text: string;
   stance: string;
   signals: Signal[];
-  recommendations: Recommendation[];
+  decision: Decision;
   macro_snapshot: Record<string, number>;
 }
 
@@ -77,15 +101,27 @@ const SIGNAL_STYLES: Record<string, { border: string; bg: string; badge: string;
   },
 };
 
-const DIRECTION_STYLES: Record<string, string> = {
+const ALLOCATION_COLORS: Record<string, { bg: string; dot: string }> = {
+  "국내주식": { bg: "bg-blue-500", dot: "bg-blue-500" },
+  "해외주식": { bg: "bg-indigo-500", dot: "bg-indigo-500" },
+  "채권": { bg: "bg-green-500", dot: "bg-green-500" },
+  "원자재/금": { bg: "bg-amber-500", dot: "bg-amber-500" },
+  "현금": { bg: "bg-gray-400", dot: "bg-gray-400" },
+};
+
+const DIRECTION_BADGE: Record<string, string> = {
   overweight: "bg-green-600 text-white",
   underweight: "bg-red-600 text-white",
+  neutral: "bg-gray-500 text-white",
 };
 
 const MACRO_LABELS: Record<string, string> = {
   us10y: "US 10Y",
+  us2y: "US 2Y",
   kr3y: "KR 3Y",
+  yield_spread: "Yield Spread",
   usdkrw: "USD/KRW",
+  dxy: "DXY",
 };
 
 const QUOTES = [
@@ -131,11 +167,11 @@ function LoadingSkeleton() {
           ))}
         </div>
       </div>
-      {/* Recommendation skeletons */}
+      {/* Decision skeletons */}
       <div>
         <SkeletonBlock className="h-6 w-40 mb-3" />
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-          {Array.from({ length: 3 }).map((_, i) => (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          {Array.from({ length: 4 }).map((_, i) => (
             <Card key={i}>
               <CardContent className="p-4 space-y-2">
                 <SkeletonBlock className="h-5 w-28" />
@@ -163,23 +199,206 @@ function SignalCard({ signal }: { signal: Signal }) {
   );
 }
 
-function RecommendationCard({ rec }: { rec: Recommendation }) {
-  const dirStyle = DIRECTION_STYLES[rec.direction] ?? "bg-gray-500 text-white";
+/* ---------- A. Asset Allocation Bar ---------- */
+function AllocationBar({ allocation }: { allocation: Record<string, number> }) {
+  const entries = Object.entries(allocation);
+  const total = entries.reduce((s, [, v]) => s + v, 0);
+
   return (
     <Card>
       <CardHeader className="pb-2">
-        <div className="flex items-center justify-between">
-          <CardTitle className="text-base">{rec.category}</CardTitle>
-          <Badge className={dirStyle}>{rec.direction}</Badge>
+        <CardTitle className="text-base">자산 배분</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-3">
+        {/* Stacked horizontal bar */}
+        <div className="flex h-7 w-full rounded-md overflow-hidden">
+          {entries.map(([key, pct]) => {
+            const color = ALLOCATION_COLORS[key]?.bg ?? "bg-gray-300";
+            const widthPct = total > 0 ? (pct / total) * 100 : 0;
+            return (
+              <div
+                key={key}
+                className={`${color} relative group`}
+                style={{ width: `${widthPct}%` }}
+                title={`${key}: ${pct}%`}
+              >
+                {widthPct >= 10 && (
+                  <span className="absolute inset-0 flex items-center justify-center text-xs font-semibold text-white">
+                    {pct}%
+                  </span>
+                )}
+              </div>
+            );
+          })}
         </div>
+        {/* Legend */}
+        <div className="flex flex-wrap gap-x-4 gap-y-1">
+          {entries.map(([key, pct]) => {
+            const dotColor = ALLOCATION_COLORS[key]?.dot ?? "bg-gray-400";
+            return (
+              <span key={key} className="flex items-center gap-1.5 text-sm text-gray-700">
+                <span className={`inline-block w-2.5 h-2.5 rounded-full ${dotColor}`} />
+                {key} {pct}%
+              </span>
+            );
+          })}
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+/* ---------- B. Sector Tilts ---------- */
+function ConvictionDots({ conviction }: { conviction: string }) {
+  const dots = [0, 1, 2];
+  if (conviction === "high") {
+    return (
+      <span className="inline-flex gap-0.5">
+        {dots.map((i) => (
+          <span key={i} className="inline-block w-2 h-2 rounded-full bg-gray-800" />
+        ))}
+      </span>
+    );
+  }
+  if (conviction === "medium") {
+    return (
+      <span className="inline-flex gap-0.5">
+        {dots.map((i) => (
+          <span
+            key={i}
+            className={`inline-block w-2 h-2 rounded-full ${i < 2 ? "bg-gray-800" : "bg-gray-300"}`}
+          />
+        ))}
+      </span>
+    );
+  }
+  // low
+  return (
+    <span className="inline-flex gap-0.5">
+      {dots.map((i) => (
+        <span key={i} className="inline-block w-2 h-2 rounded-full border border-gray-400" />
+      ))}
+    </span>
+  );
+}
+
+function SectorTilts({ tilts }: { tilts: Tilt[] }) {
+  return (
+    <Card>
+      <CardHeader className="pb-2">
+        <CardTitle className="text-base">섹터 틸트</CardTitle>
       </CardHeader>
       <CardContent>
-        <p className="text-sm text-gray-700 mb-3 leading-relaxed">{rec.reason}</p>
-        {rec.examples && (
-          <p className="text-xs text-gray-500">
-            <span className="font-semibold">ETF: </span>
-            {rec.examples}
-          </p>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          {tilts.map((tilt, i) => {
+            const dirStyle = DIRECTION_BADGE[tilt.direction] ?? "bg-gray-500 text-white";
+            return (
+              <div
+                key={i}
+                className="border rounded-lg p-3 space-y-2"
+              >
+                <div className="flex items-center justify-between">
+                  <span className="font-semibold text-sm text-gray-900">{tilt.sector}</span>
+                  <Badge className={dirStyle}>{tilt.direction}</Badge>
+                </div>
+                <div className="flex items-center gap-2 text-xs text-gray-500">
+                  <span>확신도</span>
+                  <ConvictionDots conviction={tilt.conviction} />
+                  <span className="capitalize">{tilt.conviction}</span>
+                </div>
+                <p className="text-sm text-gray-700 leading-relaxed">{tilt.reason}</p>
+              </div>
+            );
+          })}
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+/* ---------- C. ETF Picks ---------- */
+function ETFPicks({ picks }: { picks: Pick[] }) {
+  return (
+    <Card>
+      <CardHeader className="pb-2">
+        <CardTitle className="text-base">ETF 추천 종목</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>종목</TableHead>
+              <TableHead>자산군</TableHead>
+              <TableHead className="text-right">비중</TableHead>
+              <TableHead>사유</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {picks.map((pick, i) => (
+              <TableRow key={i}>
+                <TableCell>
+                  <Link
+                    to={`/etf/${pick.ticker}`}
+                    className="text-blue-600 hover:underline font-medium"
+                  >
+                    {pick.name}
+                  </Link>
+                  <span className="block text-xs text-gray-400">{pick.ticker}</span>
+                </TableCell>
+                <TableCell>
+                  <Badge variant="outline" className="text-xs">
+                    {pick.asset_class}
+                  </Badge>
+                </TableCell>
+                <TableCell className="text-right font-semibold">{pick.weight}%</TableCell>
+                <TableCell className="text-sm text-gray-700 max-w-xs">{pick.reason}</TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </CardContent>
+    </Card>
+  );
+}
+
+/* ---------- D. Risk Parameters ---------- */
+function RiskParams({ params }: { params: Record<string, any> }) {
+  return (
+    <Card>
+      <CardHeader className="pb-2">
+        <CardTitle className="text-base">리스크 관리</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-3">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div className="border rounded-lg p-3 text-center">
+            <p className="text-xs text-gray-500">최대 단일 포지션</p>
+            <p className="text-xl font-bold text-gray-900">
+              {params.max_single_position != null ? `${params.max_single_position}%` : "-"}
+            </p>
+          </div>
+          <div className="border rounded-lg p-3 text-center">
+            <p className="text-xs text-gray-500">손절매</p>
+            <p className="text-xl font-bold text-red-600">
+              {params.stop_loss_pct != null ? `${params.stop_loss_pct}%` : "-"}
+            </p>
+          </div>
+          <div className="border rounded-lg p-3 text-center">
+            <p className="text-xs text-gray-500">최소 현금 비중</p>
+            <p className="text-xl font-bold text-gray-900">
+              {params.cash_reserve_min != null ? `${params.cash_reserve_min}%` : "-"}
+            </p>
+          </div>
+        </div>
+        {params.rebalance_trigger && (
+          <div className="border rounded-lg p-3">
+            <p className="text-xs text-gray-500 mb-1">리밸런싱 기준</p>
+            <p className="text-sm text-gray-800">{params.rebalance_trigger}</p>
+          </div>
+        )}
+        {params.special_note && (
+          <div className="rounded-lg p-3 bg-amber-50 border border-amber-200">
+            <p className="text-sm text-amber-900 font-medium">{params.special_note}</p>
+          </div>
         )}
       </CardContent>
     </Card>
@@ -199,7 +418,7 @@ export default function Druckenmiller() {
     api
       .getDruckenmiller()
       .then((res) => {
-        if (!cancelled) setData(res);
+        if (!cancelled) setData(res as any);
       })
       .catch((err) => {
         if (!cancelled) setError(err.message);
@@ -274,15 +493,32 @@ export default function Druckenmiller() {
         </div>
       </section>
 
-      {/* Recommendations Section */}
-      <section>
-        <h2 className="text-lg font-bold text-gray-800 mb-3">투자 추천</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-          {data.recommendations.map((rec, i) => (
-            <RecommendationCard key={i} rec={rec} />
-          ))}
-        </div>
-      </section>
+      {/* Decision Layer */}
+      {data.decision && (
+        <section className="space-y-4">
+          <h2 className="text-lg font-bold text-gray-800">투자 의사결정</h2>
+
+          {/* A. Asset Allocation */}
+          {data.decision.allocation && (
+            <AllocationBar allocation={data.decision.allocation} />
+          )}
+
+          {/* B. Sector Tilts */}
+          {data.decision.tilts && data.decision.tilts.length > 0 && (
+            <SectorTilts tilts={data.decision.tilts} />
+          )}
+
+          {/* C. ETF Picks */}
+          {data.decision.picks && data.decision.picks.length > 0 && (
+            <ETFPicks picks={data.decision.picks} />
+          )}
+
+          {/* D. Risk Parameters */}
+          {data.decision.risk_params && (
+            <RiskParams params={data.decision.risk_params} />
+          )}
+        </section>
+      )}
 
       {/* Druckenmiller Quotes Footer */}
       <Card className="border-purple-200 bg-purple-50">

@@ -123,12 +123,12 @@ export const api = {
       overall_text: string;
       stance: string;
       signals: Array<{ type: string; text: string }>;
-      recommendations: Array<{
-        category: string;
-        direction: string;
-        reason: string;
-        examples: string;
-      }>;
+      decision: {
+        allocation: Record<string, number>;
+        tilts: Array<{ sector: string; direction: string; conviction: string; reason: string }>;
+        picks: Array<{ asset_class: string; name: string; ticker: string; weight: number; reason: string }>;
+        risk_params: Record<string, any>;
+      };
       macro_snapshot: Record<string, number>;
     }>("/api/druckenmiller"),
 
