@@ -405,36 +405,38 @@ export default function Portfolio() {
 
             {/* Action buttons */}
             {portfolio.length > 0 && (
-              <div className="flex gap-2">
-                <button
-                  onClick={equalizeWeights}
-                  className="flex-1 px-3 py-2 text-sm border border-gray-300 rounded hover:bg-gray-100 transition"
-                >
-                  균등 배분
-                </button>
-                <button
-                  onClick={analyze}
-                  disabled={!isWeightValid || analyzing}
-                  className="flex-1 px-3 py-2 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-40 disabled:cursor-not-allowed transition font-medium"
-                >
-                  {analyzing ? "분석 중..." : "분석"}
-                </button>
-              </div>
-              <div className="flex gap-1 mt-2">
-                {[1, 3, 5].map((y) => (
+              <>
+                <div className="flex gap-2">
                   <button
-                    key={y}
-                    onClick={() => setYears(y)}
-                    className={`flex-1 px-2 py-1.5 text-xs rounded transition ${
-                      years === y
-                        ? "bg-gray-800 text-white"
-                        : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-                    }`}
+                    onClick={equalizeWeights}
+                    className="flex-1 px-3 py-2 text-sm border border-gray-300 rounded hover:bg-gray-100 transition"
                   >
-                    {y}년
+                    균등 배분
                   </button>
-                ))}
-              </div>
+                  <button
+                    onClick={analyze}
+                    disabled={!isWeightValid || analyzing}
+                    className="flex-1 px-3 py-2 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-40 disabled:cursor-not-allowed transition font-medium"
+                  >
+                    {analyzing ? "분석 중..." : "분석"}
+                  </button>
+                </div>
+                <div className="flex gap-1 mt-2">
+                  {[1, 3, 5].map((y) => (
+                    <button
+                      key={y}
+                      onClick={() => setYears(y)}
+                      className={`flex-1 px-2 py-1.5 text-xs rounded transition ${
+                        years === y
+                          ? "bg-gray-800 text-white"
+                          : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                      }`}
+                    >
+                      {y}년
+                    </button>
+                  ))}
+                </div>
+              </>
             )}
 
             {portfolio.length === 0 && (
