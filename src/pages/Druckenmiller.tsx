@@ -176,23 +176,10 @@ function RecommendationCard({ rec }: { rec: Recommendation }) {
       <CardContent>
         <p className="text-sm text-gray-700 mb-3 leading-relaxed">{rec.reason}</p>
         {rec.examples && (
-          <div className="text-xs text-gray-500">
+          <p className="text-xs text-gray-500">
             <span className="font-semibold">ETF: </span>
-            {rec.examples.split(",").map((ex, i) => {
-              const trimmed = ex.trim();
-              return (
-                <span key={i}>
-                  {i > 0 && ", "}
-                  <a
-                    href={`#/etf/${trimmed}`}
-                    className="text-blue-600 hover:underline"
-                  >
-                    {trimmed}
-                  </a>
-                </span>
-              );
-            })}
-          </div>
+            {rec.examples}
+          </p>
         )}
       </CardContent>
     </Card>
