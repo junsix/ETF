@@ -1,7 +1,9 @@
 import { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
-import { api } from "../api/client";
-import type { ETFListResponse } from "../api/types";
+import { api } from "@/shared/api/client";
+import type { ETFListResponse } from "@/shared/api/types";
+import { Button } from "@/shared/ui/button";
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/shared/ui/table";
 
 export default function Company() {
   const { name } = useParams<{ name: string }>();
@@ -63,75 +65,68 @@ export default function Company() {
       <h1 className="text-2xl font-bold mt-4 mb-1">{decodedName}</h1>
       <p className="text-gray-500 mb-6">총 {data.total}개 ETF</p>
 
-      <div className="overflow-x-auto border border-gray-200 rounded-lg">
-        <table className="w-full text-sm">
-          <thead className="bg-gray-50 border-b border-gray-200">
-            <tr>
-              <th className="text-left px-3 py-3 font-semibold text-gray-700">
-                티커
-              </th>
-              <th className="text-left px-3 py-3 font-semibold text-gray-700">
-                이름
-              </th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-100">
+      <div className="border border-gray-200 rounded-lg">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>티커</TableHead>
+              <TableHead>이름</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
             {data.items.map((etf) => (
-              <tr
-                key={etf.ticker}
-                className="hover:bg-gray-50 transition-colors"
-              >
-                <td className="px-3 py-3 font-mono text-gray-600">
+              <TableRow key={etf.ticker}>
+                <TableCell className="font-mono text-gray-600">
                   <Link
                     to={`/etf/${etf.ticker}`}
                     className="text-blue-600 hover:underline"
                   >
                     {etf.ticker}
                   </Link>
-                </td>
-                <td className="px-3 py-3 font-medium text-gray-900">
+                </TableCell>
+                <TableCell className="font-medium text-gray-900">
                   <Link
                     to={`/etf/${etf.ticker}`}
                     className="hover:text-blue-600"
                   >
                     {etf.name}
                   </Link>
-                </td>
-              </tr>
+                </TableCell>
+              </TableRow>
             ))}
             {data.items.length === 0 && (
-              <tr>
-                <td
+              <TableRow>
+                <TableCell
                   colSpan={2}
-                  className="px-3 py-8 text-center text-gray-400"
+                  className="text-center text-gray-400 py-8"
                 >
                   해당 운용사의 ETF가 없습니다
-                </td>
-              </tr>
+                </TableCell>
+              </TableRow>
             )}
-          </tbody>
-        </table>
+          </TableBody>
+        </Table>
       </div>
 
       {totalPages > 1 && (
         <div className="flex items-center justify-center gap-4 mt-4">
-          <button
+          <Button
+            variant="outline"
             onClick={() => setPage((p) => Math.max(1, p - 1))}
             disabled={page <= 1}
-            className="px-4 py-2 text-sm border border-gray-300 rounded hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed transition"
           >
             이전
-          </button>
+          </Button>
           <span className="text-sm text-gray-600">
             {page} / {totalPages}
           </span>
-          <button
+          <Button
+            variant="outline"
             onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
             disabled={page >= totalPages}
-            className="px-4 py-2 text-sm border border-gray-300 rounded hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed transition"
           >
             다음
-          </button>
+          </Button>
         </div>
       )}
     </div>

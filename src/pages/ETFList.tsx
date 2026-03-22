@@ -1,8 +1,14 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { api } from "../api/client";
-import type { RankingItem, RankingResponse, ThemeItem } from "../api/types";
-import HelpTip from "../components/HelpTip";
+import { api } from "@/shared/api/client";
+import type { RankingItem, RankingResponse, ThemeItem } from "@/shared/api/types";
+import HelpTip from "@/shared/components/HelpTip";
+import { formatReturn, returnColor, formatNumber, formatVolume } from "@/shared/lib/utils";
+import { Input } from "@/shared/ui/input";
+import { Button } from "@/shared/ui/button";
+import { Badge } from "@/shared/ui/badge";
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/shared/ui/table";
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/shared/ui/select";
 
 const SORT_OPTIONS = [
   { value: "returns_1m", label: "1개월 수익률" },
@@ -25,39 +31,15 @@ const CATEGORIES = [
   { value: "혼합/기타", label: "혼합/기타" },
 ];
 
-function formatReturn(val: number | null): string {
-  if (val === null || val === undefined) return "-";
-  return `${val >= 0 ? "+" : ""}${val.toFixed(2)}%`;
-}
-
-function returnColor(val: number | null): string {
-  if (val === null || val === undefined) return "text-gray-400";
-  if (val > 0) return "text-red-600";
-  if (val < 0) return "text-blue-600";
-  return "text-gray-600";
-}
-
-function formatNumber(val: number | null): string {
-  if (val === null || val === undefined) return "-";
-  return val.toLocaleString("ko-KR");
-}
-
-function formatVolume(vol: number): string {
-  if (vol >= 1_000_000_000) return `${(vol / 1_000_000_000).toFixed(1)}B`;
-  if (vol >= 1_000_000) return `${(vol / 1_000_000).toFixed(1)}M`;
-  if (vol >= 1_000) return `${(vol / 1_000).toFixed(0)}K`;
-  return String(vol);
-}
-
 function SkeletonRow() {
   return (
-    <tr className="animate-pulse">
+    <TableRow className="animate-pulse">
       {Array.from({ length: 10 }).map((_, i) => (
-        <td key={i} className="px-3 py-3">
+        <TableCell key={i}>
           <div className="h-4 bg-gray-200 rounded w-full" />
-        </td>
+        </TableCell>
       ))}
-    </tr>
+    </TableRow>
   );
 }
 
@@ -123,91 +105,98 @@ export default function ETFList() {
       {/* Category filter tabs */}
       <div className="flex flex-wrap gap-2 mb-2">
         {CATEGORIES.map((cat) => (
-          <button
+          <Badge
             key={cat.value}
+            variant={category === cat.value ? "default" : "outline"}
+            className={`cursor-pointer text-sm px-3 py-1.5 ${
+              category === cat.value
+                ? "bg-blue-600 text-white border-blue-600 hover:bg-blue-700"
+                : "bg-white text-gray-600 hover:bg-gray-100"
+            }`}
             onClick={() => {
               setCategory(cat.value);
               setTheme("");
               setPage(1);
             }}
-            className={`px-3 py-1.5 text-sm rounded-full border transition ${
-              category === cat.value
-                ? "bg-blue-600 text-white border-blue-600"
-                : "bg-white text-gray-600 border-gray-300 hover:bg-gray-100"
-            }`}
           >
             {cat.label}
-          </button>
+          </Badge>
         ))}
       </div>
 
       {/* Theme filter pills */}
       {themes.length > 0 && (
         <div className="flex flex-wrap gap-1.5 mb-4">
-          <button
-            onClick={() => {
-              setTheme("");
-              setPage(1);
-            }}
-            className={`px-2.5 py-1 text-xs rounded-full border transition ${
+          <Badge
+            variant={theme === "" ? "default" : "outline"}
+            className={`cursor-pointer text-xs ${
               theme === ""
                 ? "bg-indigo-600 text-white border-indigo-600"
                 : "bg-white text-gray-500 border-gray-200 hover:bg-gray-50"
             }`}
+            onClick={() => {
+              setTheme("");
+              setPage(1);
+            }}
           >
             전체
-          </button>
+          </Badge>
           {themes.map((t) => (
-            <button
+            <Badge
               key={t.name}
-              onClick={() => {
-                setTheme(t.name);
-                setPage(1);
-              }}
-              className={`px-2.5 py-1 text-xs rounded-full border transition ${
+              variant={theme === t.name ? "default" : "outline"}
+              className={`cursor-pointer text-xs ${
                 theme === t.name
                   ? "bg-indigo-600 text-white border-indigo-600"
                   : "bg-white text-gray-500 border-gray-200 hover:bg-gray-50"
               }`}
+              onClick={() => {
+                setTheme(t.name);
+                setPage(1);
+              }}
             >
               {t.name} ({t.count})
-            </button>
+            </Badge>
           ))}
         </div>
       )}
 
       {/* Controls */}
       <div className="flex flex-wrap gap-3 mb-4 items-center">
-        <input
+        <Input
           type="text"
           placeholder="이름 또는 티커 검색..."
           value={searchInput}
           onChange={(e) => setSearchInput(e.target.value)}
-          className="border border-gray-300 rounded px-3 py-2 text-sm w-64 focus:outline-none focus:ring-2 focus:ring-blue-400"
+          className="w-64"
         />
-        <select
+        <Select
           value={sortBy}
-          onChange={(e) => {
-            setSortBy(e.target.value);
+          onValueChange={(value) => {
+            setSortBy(value);
             setPage(1);
           }}
-          className="border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
         >
-          {SORT_OPTIONS.map((opt) => (
-            <option key={opt.value} value={opt.value}>
-              {opt.label}
-            </option>
-          ))}
-        </select>
-        <button
+          <SelectTrigger className="w-[180px]">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {SORT_OPTIONS.map((opt) => (
+              <SelectItem key={opt.value} value={opt.value}>
+                {opt.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <Button
+          variant="outline"
           onClick={() => {
             setOrder(order === "desc" ? "asc" : "desc");
             setPage(1);
           }}
-          className="border border-gray-300 rounded px-3 py-2 text-sm hover:bg-gray-100 transition"
         >
           {order === "desc" ? "▼ 내림차순" : "▲ 오름차순"}
-        </button>
+        </Button>
         <HelpTip text="가격 기준 수익률입니다. 배당 재투자 수익률은 개별 ETF 상세 페이지에서 확인할 수 있습니다." />
       </div>
 
@@ -219,47 +208,44 @@ export default function ETFList() {
       )}
 
       {/* Table */}
-      <div className="overflow-x-auto border border-gray-200 rounded-lg">
-        <table className="w-full text-sm">
-          <thead className="bg-gray-50 border-b border-gray-200">
-            <tr>
-              <th className="text-left px-3 py-3 font-semibold text-gray-700">티커</th>
-              <th className="text-left px-3 py-3 font-semibold text-gray-700">이름</th>
-              <th className="text-left px-3 py-3 font-semibold text-gray-700">운용사</th>
-              <th className="text-right px-3 py-3 font-semibold text-gray-700">현재가</th>
-              <th className="text-right px-3 py-3 font-semibold text-gray-700">1주<HelpTip text="최근 1주간 가격 수익률 (배당 미반영)" /></th>
-              <th className="text-right px-3 py-3 font-semibold text-gray-700">1개월</th>
-              <th className="text-right px-3 py-3 font-semibold text-gray-700">3개월</th>
-              <th className="text-right px-3 py-3 font-semibold text-gray-700">1년</th>
-              <th className="text-right px-3 py-3 font-semibold text-gray-700">거래량</th>
-              <th className="text-right px-3 py-3 font-semibold text-gray-700">상장일</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-100">
+      <div className="border border-gray-200 rounded-lg">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>티커</TableHead>
+              <TableHead>이름</TableHead>
+              <TableHead>운용사</TableHead>
+              <TableHead className="text-right">현재가</TableHead>
+              <TableHead className="text-right">1주<HelpTip text="최근 1주간 가격 수익률 (배당 미반영)" /></TableHead>
+              <TableHead className="text-right">1개월</TableHead>
+              <TableHead className="text-right">3개월</TableHead>
+              <TableHead className="text-right">1년</TableHead>
+              <TableHead className="text-right">거래량</TableHead>
+              <TableHead className="text-right">상장일</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
             {loading
               ? Array.from({ length: 10 }).map((_, i) => <SkeletonRow key={i} />)
               : filtered.map((item) => (
-                  <tr
-                    key={item.ticker}
-                    className="hover:bg-gray-50 transition-colors"
-                  >
-                    <td className="px-3 py-3 font-mono text-gray-600">
+                  <TableRow key={item.ticker}>
+                    <TableCell className="font-mono text-gray-600">
                       <Link
                         to={`/etf/${item.ticker}`}
                         className="text-blue-600 hover:underline"
                       >
                         {item.ticker}
                       </Link>
-                    </td>
-                    <td className="px-3 py-3 font-medium text-gray-900">
+                    </TableCell>
+                    <TableCell className="font-medium text-gray-900">
                       <Link
                         to={`/etf/${item.ticker}`}
                         className="hover:text-blue-600"
                       >
                         {item.name}
                       </Link>
-                    </td>
-                    <td className="px-3 py-3 text-gray-500">
+                    </TableCell>
+                    <TableCell className="text-gray-500">
                       {item.management_company ? (
                         <Link
                           to={`/company/${encodeURIComponent(item.management_company)}`}
@@ -270,80 +256,80 @@ export default function ETFList() {
                       ) : (
                         "-"
                       )}
-                    </td>
-                    <td className="px-3 py-3 text-right font-mono">
+                    </TableCell>
+                    <TableCell className="text-right font-mono">
                       {formatNumber(item.close)}
-                    </td>
-                    <td
-                      className={`px-3 py-3 text-right font-mono ${returnColor(
+                    </TableCell>
+                    <TableCell
+                      className={`text-right font-mono ${returnColor(
                         item.returns["1w"]
                       )}`}
                     >
                       {formatReturn(item.returns["1w"])}
-                    </td>
-                    <td
-                      className={`px-3 py-3 text-right font-mono ${returnColor(
+                    </TableCell>
+                    <TableCell
+                      className={`text-right font-mono ${returnColor(
                         item.returns["1m"]
                       )}`}
                     >
                       {formatReturn(item.returns["1m"])}
-                    </td>
-                    <td
-                      className={`px-3 py-3 text-right font-mono ${returnColor(
+                    </TableCell>
+                    <TableCell
+                      className={`text-right font-mono ${returnColor(
                         item.returns["3m"]
                       )}`}
                     >
                       {formatReturn(item.returns["3m"])}
-                    </td>
-                    <td
-                      className={`px-3 py-3 text-right font-mono ${returnColor(
+                    </TableCell>
+                    <TableCell
+                      className={`text-right font-mono ${returnColor(
                         item.returns["1y"]
                       )}`}
                     >
                       {formatReturn(item.returns["1y"])}
-                    </td>
-                    <td className="px-3 py-3 text-right font-mono text-gray-500">
+                    </TableCell>
+                    <TableCell className="text-right font-mono text-gray-500">
                       {formatVolume(item.volume)}
-                    </td>
-                    <td className="px-3 py-3 text-right text-gray-400 text-xs">
+                    </TableCell>
+                    <TableCell className="text-right text-gray-400 text-xs">
                       {item.listed_date || "-"}
-                    </td>
-                  </tr>
+                    </TableCell>
+                  </TableRow>
                 ))}
             {!loading && filtered.length === 0 && (
-              <tr>
-                <td
+              <TableRow>
+                <TableCell
                   colSpan={10}
-                  className="px-3 py-8 text-center text-gray-400"
+                  className="text-center text-gray-400 py-8"
                 >
                   검색 결과가 없습니다
-                </td>
-              </tr>
+                </TableCell>
+              </TableRow>
             )}
-          </tbody>
-        </table>
+          </TableBody>
+        </Table>
       </div>
 
       {/* Pagination */}
       {totalPages > 1 && (
         <div className="flex items-center justify-center gap-4 mt-4">
-          <button
+          <Button
+            variant="outline"
             onClick={() => setPage((p) => Math.max(1, p - 1))}
             disabled={page <= 1}
-            className="px-4 py-2 text-sm border border-gray-300 rounded hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed transition"
           >
             이전
-          </button>
+          </Button>
           <span className="text-sm text-gray-600">
             {page} / {totalPages}
           </span>
-          <button
+          <Button
+            variant="outline"
             onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
             disabled={page >= totalPages}
-            className="px-4 py-2 text-sm border border-gray-300 rounded hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed transition"
           >
             다음
-          </button>
+          </Button>
         </div>
       )}
     </div>

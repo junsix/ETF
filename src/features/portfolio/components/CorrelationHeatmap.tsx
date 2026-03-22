@@ -1,5 +1,5 @@
 import { useState } from "react";
-import HelpTip from "./HelpTip";
+import HelpTip from "@/shared/components/HelpTip";
 
 interface Props {
   tickers: string[];
@@ -8,7 +8,7 @@ interface Props {
   tailMatrix: number[][];
 }
 
-/** 상관계수 → 배경색 (파랑 -1 ~ 회색 0 ~ 빨강 +1) */
+/** 상관계수 -> 배경색 (파랑 -1 ~ 회색 0 ~ 빨강 +1) */
 function corrColor(val: number): string {
   if (val >= 0.8) return "bg-red-500 text-white";
   if (val >= 0.6) return "bg-red-300 text-red-900";
@@ -49,13 +49,13 @@ function diagnose(
       const nameB = names[j] || tickers[j];
 
       if (corr >= 0.85) {
-        highPairs.push(`${nameA} ↔ ${nameB} (${corr.toFixed(2)})`);
+        highPairs.push(`${nameA} <-> ${nameB} (${corr.toFixed(2)})`);
       }
 
       // 꼬리 상관이 평시보다 0.15 이상 높으면 위기 동조 경고
       if (tail - corr > 0.15 && tail >= 0.7) {
         tailSurgePairs.push(
-          `${nameA} ↔ ${nameB} (평시 ${corr.toFixed(2)} → 하락 시 ${tail.toFixed(2)})`
+          `${nameA} <-> ${nameB} (평시 ${corr.toFixed(2)} -> 하락 시 ${tail.toFixed(2)})`
         );
       }
     }
@@ -64,7 +64,7 @@ function diagnose(
   if (highPairs.length > 0) {
     items.push({
       type: "danger",
-      message: `높은 상관 (≥0.85): ${highPairs.join(", ")}. 실질 분산 효과가 낮습니다.`,
+      message: `높은 상관 (>=0.85): ${highPairs.join(", ")}. 실질 분산 효과가 낮습니다.`,
     });
   }
 
@@ -97,17 +97,17 @@ function diagnose(
   if (avgCorr >= 0.7) {
     items.push({
       type: "danger",
-      message: `포트폴리오 평균 상관계수 ${avgCorr.toFixed(2)} — 분산이 매우 부족합니다.`,
+      message: `포트폴리오 평균 상관계수 ${avgCorr.toFixed(2)} -- 분산이 매우 부족합니다.`,
     });
   } else if (avgCorr >= 0.5) {
     items.push({
       type: "warning",
-      message: `포트폴리오 평균 상관계수 ${avgCorr.toFixed(2)} — 분산 개선 여지가 있습니다.`,
+      message: `포트폴리오 평균 상관계수 ${avgCorr.toFixed(2)} -- 분산 개선 여지가 있습니다.`,
     });
   } else {
     items.push({
       type: "good",
-      message: `포트폴리오 평균 상관계수 ${avgCorr.toFixed(2)} — 분산이 양호합니다.`,
+      message: `포트폴리오 평균 상관계수 ${avgCorr.toFixed(2)} -- 분산이 양호합니다.`,
     });
   }
 
@@ -160,7 +160,7 @@ export default function CorrelationHeatmap({
 
   // 짧은 이름 (최대 8자)
   const shortNames = names.map((name) =>
-    name.length > 8 ? name.slice(0, 7) + "…" : name
+    name.length > 8 ? name.slice(0, 7) + "\u2026" : name
   );
 
   return (
@@ -235,7 +235,7 @@ export default function CorrelationHeatmap({
                       }`}
                       style={{ minWidth: "50px" }}
                     >
-                      {isDiag ? "—" : val.toFixed(2)}
+                      {isDiag ? "\u2014" : val.toFixed(2)}
                     </td>
                   );
                 })}

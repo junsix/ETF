@@ -2,14 +2,19 @@ import { useEffect, useRef, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { createChart, CandlestickSeries, HistogramSeries } from "lightweight-charts";
 import type { Time } from "lightweight-charts";
-import { api } from "../api/client";
+import { api } from "@/shared/api/client";
 import type {
   ETF,
   ETFReturnsResponse,
   DailyPrice,
   Holding,
-} from "../api/types";
-import HelpTip from "../components/HelpTip";
+} from "@/shared/api/types";
+import HelpTip from "@/shared/components/HelpTip";
+import { formatReturn, returnColor } from "@/shared/lib/utils";
+import { Card, CardHeader, CardTitle, CardContent } from "@/shared/ui/card";
+import { Badge } from "@/shared/ui/badge";
+import { Button } from "@/shared/ui/button";
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/shared/ui/table";
 
 // 운용사 브랜드별 ETF 목록 페이지 (상품 ID가 티커와 다르므로 목록 페이지로 링크)
 const PROVIDER_SITES: Record<string, { name: string; url: string }> = {
@@ -55,7 +60,7 @@ function DonutChart({ title, items, colors }: {
 }) {
   if (items.length === 0) return null;
 
-  let gradientParts: string[] = [];
+  const gradientParts: string[] = [];
   let cumulative = 0;
   items.forEach((item, i) => {
     const color = colors[i % colors.length];
@@ -67,24 +72,28 @@ function DonutChart({ title, items, colors }: {
   }
 
   return (
-    <div className="border rounded-lg p-4 bg-white">
-      <h3 className="text-sm font-semibold text-gray-700 mb-3">{title}</h3>
-      <div className="flex flex-col items-center gap-3">
-        <div
-          className="w-36 h-36 rounded-full"
-          style={{ background: `conic-gradient(${gradientParts.join(", ")})` }}
-        />
-        <div className="text-xs space-y-1 w-full">
-          {items.map((item, i) => (
-            <div key={item.name} className="flex items-center gap-1.5">
-              <span className="w-2.5 h-2.5 rounded-sm shrink-0" style={{ backgroundColor: colors[i % colors.length] }} />
-              <span className="truncate">{item.name}</span>
-              <span className="text-gray-400 ml-auto">{item.weight.toFixed(1)}%</span>
-            </div>
-          ))}
+    <Card>
+      <CardHeader className="p-4 pb-0">
+        <CardTitle className="text-sm text-gray-700">{title}</CardTitle>
+      </CardHeader>
+      <CardContent className="p-4">
+        <div className="flex flex-col items-center gap-3">
+          <div
+            className="w-36 h-36 rounded-full"
+            style={{ background: `conic-gradient(${gradientParts.join(", ")})` }}
+          />
+          <div className="text-xs space-y-1 w-full">
+            {items.map((item, i) => (
+              <div key={item.name} className="flex items-center gap-1.5">
+                <span className="w-2.5 h-2.5 rounded-sm shrink-0" style={{ backgroundColor: colors[i % colors.length] }} />
+                <span className="truncate">{item.name}</span>
+                <span className="text-gray-400 ml-auto">{item.weight.toFixed(1)}%</span>
+              </div>
+            ))}
+          </div>
         </div>
-      </div>
-    </div>
+      </CardContent>
+    </Card>
   );
 }
 
@@ -108,7 +117,7 @@ const PieChart = ({ holdings }: { holdings: Holding[] }) => {
     100 - top.reduce((sum, h) => sum + h.weight, 0)
   );
 
-  let gradientParts: string[] = [];
+  const gradientParts: string[] = [];
   let cumulative = 0;
   top.forEach((h, i) => {
     gradientParts.push(
@@ -174,18 +183,6 @@ const WeightBars = ({ holdings }: { holdings: Holding[] }) => {
     </div>
   );
 };
-
-function formatReturn(val: number | null): string {
-  if (val === null || val === undefined) return "-";
-  return `${val >= 0 ? "+" : ""}${val.toFixed(2)}%`;
-}
-
-function returnColor(val: number | null): string {
-  if (val === null || val === undefined) return "text-gray-400";
-  if (val > 0) return "text-red-600";
-  if (val < 0) return "text-blue-600";
-  return "text-gray-600";
-}
 
 function returnBg(val: number | null): string {
   if (val === null || val === undefined) return "bg-gray-50";
@@ -394,17 +391,17 @@ export default function ETFDetail() {
           {etf.category && (
             <>
               <span>|</span>
-              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-700 border border-gray-200">
+              <Badge variant="secondary" className="text-xs">
                 {etf.category}
-              </span>
+              </Badge>
             </>
           )}
           {etf.theme && (
             <>
               <span>|</span>
-              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-indigo-50 text-indigo-700 border border-indigo-200">
+              <Badge variant="outline" className="text-xs bg-indigo-50 text-indigo-700 border-indigo-200">
                 {etf.theme}
-              </span>
+              </Badge>
             </>
           )}
           {(etf.total_fee !== null || etf.expense_ratio !== null) && (
@@ -418,17 +415,17 @@ export default function ETFDetail() {
         {(etf.dividend_yield !== null || etf.dividend_per_share !== null || etf.dividend_frequency !== null) && (
           <div className="flex flex-wrap items-center gap-3 mt-2 text-sm">
             {etf.dividend_yield !== null && (
-              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-green-50 text-green-700 border border-green-200 font-medium">
+              <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 font-medium">
                 배당수익률 {etf.dividend_yield.toFixed(2)}%
-              </span>
+              </Badge>
             )}
             {etf.dividend_per_share !== null && (
-              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-blue-50 text-blue-700 border border-blue-200 font-medium">
+              <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 font-medium">
                 주당배당금 {etf.dividend_per_share.toLocaleString("ko-KR")}원
-              </span>
+              </Badge>
             )}
             {etf.dividend_frequency !== null && (
-              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-purple-50 text-purple-700 border border-purple-200 font-medium">
+              <Badge variant="outline" className="bg-purple-50 text-purple-700 border-purple-200 font-medium">
                 {etf.dividend_frequency === "monthly"
                   ? "월배당"
                   : etf.dividend_frequency === "quarterly"
@@ -438,31 +435,35 @@ export default function ETFDetail() {
                   : etf.dividend_frequency === "annual"
                   ? "연배당"
                   : etf.dividend_frequency}
-              </span>
+              </Badge>
             )}
           </div>
         )}
         {/* 외부 링크 */}
         <div className="flex gap-2 mt-3">
-          <a
-            href={`https://finance.naver.com/item/main.naver?code=${etf.ticker}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium bg-green-50 text-green-700 border border-green-200 rounded-full hover:bg-green-100 transition"
-          >
-            네이버 금융 ↗
-          </a>
+          <Button variant="outline" size="sm" asChild>
+            <a
+              href={`https://finance.naver.com/item/main.naver?code=${etf.ticker}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="bg-green-50 text-green-700 border-green-200 hover:bg-green-100"
+            >
+              네이버 금융 ↗
+            </a>
+          </Button>
           {(() => {
             const provider = getProviderSite(etf.name);
             return provider ? (
-              <a
-                href={provider.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium bg-blue-50 text-blue-700 border border-blue-200 rounded-full hover:bg-blue-100 transition"
-              >
-                {provider.name} ↗
-              </a>
+              <Button variant="outline" size="sm" asChild>
+                <a
+                  href={provider.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100"
+                >
+                  {provider.name} ↗
+                </a>
+              </Button>
             ) : null;
           })()}
         </div>
@@ -470,10 +471,14 @@ export default function ETFDetail() {
 
       {/* Chart */}
       {prices.length > 0 && (
-        <div className="mb-6 border border-gray-200 rounded-lg p-4 bg-white">
-          <h2 className="text-lg font-semibold mb-3 text-gray-800">가격 차트</h2>
-          <CandlestickChart prices={prices} />
-        </div>
+        <Card className="mb-6">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-lg">가격 차트</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <CandlestickChart prices={prices} />
+          </CardContent>
+        </Card>
       )}
 
       {/* Returns cards */}
@@ -484,15 +489,17 @@ export default function ETFDetail() {
             {RETURN_LABELS.map(({ key, label }) => {
               const val = returns.returns[key];
               return (
-                <div
+                <Card
                   key={key}
-                  className={`rounded-lg p-4 border border-gray-200 ${returnBg(val)}`}
+                  className={`${returnBg(val)} border-gray-200`}
                 >
-                  <div className="text-xs text-gray-500 mb-1">{label}</div>
-                  <div className={`text-lg font-bold font-mono ${returnColor(val)}`}>
-                    {formatReturn(val)}
-                  </div>
-                </div>
+                  <CardContent className="p-4">
+                    <div className="text-xs text-gray-500 mb-1">{label}</div>
+                    <div className={`text-lg font-bold font-mono ${returnColor(val)}`}>
+                      {formatReturn(val)}
+                    </div>
+                  </CardContent>
+                </Card>
               );
             })}
           </div>
@@ -506,17 +513,17 @@ export default function ETFDetail() {
             수익률 비교 <span className="text-sm font-normal text-gray-500">(가격 vs 총수익률)</span>
             <HelpTip text="가격 수익률은 종가 기준이며, 총 수익률(NAV)은 배당 재투자를 반영합니다. 배당수익률이 높은 ETF일수록 차이가 큽니다." />
           </h2>
-          <div className="border border-gray-200 rounded-lg overflow-hidden bg-white">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="bg-gray-50 border-b border-gray-200">
-                  <th className="text-left px-4 py-2.5 font-semibold text-gray-600">기간</th>
-                  <th className="text-right px-4 py-2.5 font-semibold text-gray-600">가격 수익률</th>
-                  <th className="text-right px-4 py-2.5 font-semibold text-gray-600">총 수익률(배당 재투자)</th>
-                  <th className="text-right px-4 py-2.5 font-semibold text-gray-600">차이</th>
-                </tr>
-              </thead>
-              <tbody>
+          <div className="border border-gray-200 rounded-lg overflow-hidden">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>기간</TableHead>
+                  <TableHead className="text-right">가격 수익률</TableHead>
+                  <TableHead className="text-right">총 수익률(배당 재투자)</TableHead>
+                  <TableHead className="text-right">차이</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
                 {([
                   { key: "1w", label: "1주" },
                   { key: "1m", label: "1개월" },
@@ -531,24 +538,24 @@ export default function ETFDetail() {
                   const totalVal = naverReturns.total_returns[key] ?? null;
                   const diff = priceVal !== null && totalVal !== null ? totalVal - priceVal : null;
                   return (
-                    <tr key={key} className="border-b border-gray-100 last:border-b-0 hover:bg-gray-50">
-                      <td className="px-4 py-2.5 font-medium text-gray-700">{label}</td>
-                      <td className={`px-4 py-2.5 text-right font-mono ${returnColor(priceVal)}`}>
+                    <TableRow key={key}>
+                      <TableCell className="font-medium text-gray-700">{label}</TableCell>
+                      <TableCell className={`text-right font-mono ${returnColor(priceVal)}`}>
                         {formatReturn(priceVal)}
-                      </td>
-                      <td className={`px-4 py-2.5 text-right font-mono ${returnColor(totalVal)}`}>
+                      </TableCell>
+                      <TableCell className={`text-right font-mono ${returnColor(totalVal)}`}>
                         {formatReturn(totalVal)}
-                      </td>
-                      <td className={`px-4 py-2.5 text-right font-mono ${
+                      </TableCell>
+                      <TableCell className={`text-right font-mono ${
                         diff === null ? "text-gray-400" : diff > 0 ? "text-green-600" : diff < 0 ? "text-red-600" : "text-gray-600"
                       }`}>
                         {diff === null ? "-" : `${diff >= 0 ? "+" : ""}${diff.toFixed(2)}%p`}
-                      </td>
-                    </tr>
+                      </TableCell>
+                    </TableRow>
                   );
                 })}
-              </tbody>
-            </table>
+              </TableBody>
+            </Table>
           </div>
           <p className="text-xs text-gray-400 mt-2">
             * 총 수익률은 NAV 기준 배당 재투자 수익률입니다. 차이는 배당 기여분을 나타냅니다. (출처: 네이버 금융)
@@ -626,18 +633,22 @@ export default function ETFDetail() {
             구성 종목 TOP 10
           </h2>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <div className="border border-gray-200 rounded-lg p-4 bg-white">
-              <h3 className="text-sm font-semibold text-gray-600 mb-3">
-                비중 분포
-              </h3>
-              <PieChart holdings={holdings} />
-            </div>
-            <div className="border border-gray-200 rounded-lg p-4 bg-white">
-              <h3 className="text-sm font-semibold text-gray-600 mb-3">
-                비중 막대
-              </h3>
-              <WeightBars holdings={holdings} />
-            </div>
+            <Card>
+              <CardHeader className="pb-0">
+                <CardTitle className="text-sm text-gray-600">비중 분포</CardTitle>
+              </CardHeader>
+              <CardContent className="p-4">
+                <PieChart holdings={holdings} />
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="pb-0">
+                <CardTitle className="text-sm text-gray-600">비중 막대</CardTitle>
+              </CardHeader>
+              <CardContent className="p-4">
+                <WeightBars holdings={holdings} />
+              </CardContent>
+            </Card>
           </div>
         </div>
       )}

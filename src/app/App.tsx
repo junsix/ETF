@@ -1,12 +1,12 @@
 import { HashRouter, Routes, Route, Link, useLocation } from "react-router-dom";
-import ETFList from "./pages/ETFList";
-import ETFDetail from "./pages/ETFDetail";
-import ETFCompare from "./pages/ETFCompare";
-import Dividend from "./pages/Dividend";
-import Company from "./pages/Company";
-import Market from "./pages/Market";
-import About from "./pages/About";
-import Portfolio from "./pages/Portfolio";
+import ETFList from "@/pages/ETFList";
+import ETFDetail from "@/pages/ETFDetail";
+import ETFCompare from "@/pages/ETFCompare";
+import Dividend from "@/pages/Dividend";
+import Company from "@/pages/Company";
+import Market from "@/pages/Market";
+import About from "@/pages/About";
+import Portfolio from "@/pages/Portfolio";
 
 function NavLink({ to, children }: { to: string; children: React.ReactNode }) {
   const location = useLocation();

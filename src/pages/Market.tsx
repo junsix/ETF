@@ -1,7 +1,10 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { api } from "../api/client";
-import HelpTip from "../components/HelpTip";
+import { api } from "@/shared/api/client";
+import HelpTip from "@/shared/components/HelpTip";
+import { formatVolume } from "@/shared/lib/utils";
+import { Card, CardContent } from "@/shared/ui/card";
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/shared/ui/table";
 
 interface IndicatorItem {
   symbol: string;
@@ -40,32 +43,36 @@ function IndicatorCard({
   const arrow = isUp ? "▲" : isDown ? "▼" : "";
 
   return (
-    <div className={`${bg} border rounded-lg p-4`}>
-      <div className="text-sm text-gray-500 mb-1">{name}</div>
-      <div className="text-xl font-bold">
-        {price.toLocaleString()}
-        {unit ? ` ${unit}` : ""}
-      </div>
-      {change !== null && (
-        <div className={`text-sm font-medium ${color}`}>
-          {arrow} {change > 0 ? "+" : ""}
-          {change.toLocaleString()}{" "}
-          {change_pct !== null
-            ? `(${change_pct > 0 ? "+" : ""}${change_pct}%)`
-            : ""}
+    <Card className={bg}>
+      <CardContent className="p-4">
+        <div className="text-sm text-gray-500 mb-1">{name}</div>
+        <div className="text-xl font-bold">
+          {price.toLocaleString()}
+          {unit ? ` ${unit}` : ""}
         </div>
-      )}
-    </div>
+        {change !== null && (
+          <div className={`text-sm font-medium ${color}`}>
+            {arrow} {change > 0 ? "+" : ""}
+            {change.toLocaleString()}{" "}
+            {change_pct !== null
+              ? `(${change_pct > 0 ? "+" : ""}${change_pct}%)`
+              : ""}
+          </div>
+        )}
+      </CardContent>
+    </Card>
   );
 }
 
 function SkeletonCard() {
   return (
-    <div className="bg-gray-50 border rounded-lg p-4 animate-pulse">
-      <div className="h-4 bg-gray-200 rounded w-20 mb-2" />
-      <div className="h-6 bg-gray-200 rounded w-28 mb-2" />
-      <div className="h-4 bg-gray-200 rounded w-32" />
-    </div>
+    <Card className="bg-gray-50">
+      <CardContent className="p-4 animate-pulse">
+        <div className="h-4 bg-gray-200 rounded w-20 mb-2" />
+        <div className="h-6 bg-gray-200 rounded w-28 mb-2" />
+        <div className="h-4 bg-gray-200 rounded w-32" />
+      </CardContent>
+    </Card>
   );
 }
 
@@ -82,13 +89,6 @@ function Section({
       {children}
     </section>
   );
-}
-
-function formatVolume(vol: number): string {
-  if (vol >= 1_000_000_000) return `${(vol / 1_000_000_000).toFixed(1)}B`;
-  if (vol >= 1_000_000) return `${(vol / 1_000_000).toFixed(1)}M`;
-  if (vol >= 1_000) return `${(vol / 1_000).toFixed(0)}K`;
-  return String(vol);
 }
 
 export default function Market() {
@@ -219,29 +219,29 @@ export default function Market() {
       {/* 거래량 TOP 10 */}
       <Section title="거래량 TOP 10">
         {topVolume.length > 0 ? (
-          <div className="border border-gray-200 rounded-lg overflow-hidden bg-white">
-            <table className="w-full text-sm">
-              <thead className="bg-gray-50 border-b border-gray-200">
-                <tr>
-                  <th className="text-center px-4 py-2.5 font-semibold text-gray-600 w-12">#</th>
-                  <th className="text-left px-4 py-2.5 font-semibold text-gray-600">티커</th>
-                  <th className="text-right px-4 py-2.5 font-semibold text-gray-600">거래량</th>
-                </tr>
-              </thead>
-              <tbody>
+          <div className="border border-gray-200 rounded-lg overflow-hidden">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="text-center w-12">#</TableHead>
+                  <TableHead>티커</TableHead>
+                  <TableHead className="text-right">거래량</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
                 {topVolume.map((item, idx) => (
-                  <tr key={item.ticker} className="border-b border-gray-100 last:border-b-0 hover:bg-gray-50">
-                    <td className="text-center px-4 py-2.5 font-mono text-gray-400">{idx + 1}</td>
-                    <td className="px-4 py-2.5 font-mono">
+                  <TableRow key={item.ticker}>
+                    <TableCell className="text-center font-mono text-gray-400">{idx + 1}</TableCell>
+                    <TableCell className="font-mono">
                       <Link to={`/etf/${item.ticker}`} className="text-blue-600 hover:underline">
                         {item.ticker}
                       </Link>
-                    </td>
-                    <td className="px-4 py-2.5 text-right font-mono text-gray-700">{formatVolume(item.volume)}</td>
-                  </tr>
+                    </TableCell>
+                    <TableCell className="text-right font-mono text-gray-700">{formatVolume(item.volume)}</TableCell>
+                  </TableRow>
                 ))}
-              </tbody>
-            </table>
+              </TableBody>
+            </Table>
           </div>
         ) : (
           <div className="text-center text-gray-400 py-4">데이터 없음</div>

@@ -1,13 +1,18 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { createChart, LineSeries } from "lightweight-charts";
-import { api } from "../api/client";
+import { api } from "@/shared/api/client";
 import type {
   ETF,
   ETFListResponse,
   DailyPrice,
   CompareItem,
   ReturnsData,
-} from "../api/types";
+} from "@/shared/api/types";
+import { formatReturn, returnColor } from "@/shared/lib/utils";
+import { Input } from "@/shared/ui/input";
+import { Badge } from "@/shared/ui/badge";
+import { Card, CardHeader, CardTitle, CardContent } from "@/shared/ui/card";
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/shared/ui/table";
 
 const LINE_COLORS = ["#ef4444", "#3b82f6", "#10b981", "#f59e0b"];
 
@@ -16,18 +21,6 @@ interface PortfolioBreakdown {
   sector: Array<{code: string; name: string; weight: number}>;
   country: Array<{code: string; name: string; weight: number}>;
   asset: Array<{code: string; name: string; weight: number}>;
-}
-
-function formatReturn(val: number | null): string {
-  if (val === null || val === undefined) return "-";
-  return `${val >= 0 ? "+" : ""}${val.toFixed(2)}%`;
-}
-
-function returnColor(val: number | null): string {
-  if (val === null || val === undefined) return "text-gray-400";
-  if (val > 0) return "text-red-600";
-  if (val < 0) return "text-blue-600";
-  return "text-gray-600";
 }
 
 const RETURN_LABELS: { key: keyof ReturnsData; label: string }[] = [
@@ -344,13 +337,13 @@ export default function ETFCompare() {
 
       {/* Search */}
       <div className="relative mb-4">
-        <input
+        <Input
           type="text"
           placeholder="ETF 이름 또는 티커 검색 (최대 4개)..."
           value={searchQuery}
           onChange={(e) => handleSearch(e.target.value)}
           disabled={selectedTickers.length >= 4}
-          className="border border-gray-300 rounded px-3 py-2 text-sm w-full max-w-md focus:outline-none focus:ring-2 focus:ring-blue-400 disabled:bg-gray-100"
+          className="max-w-md"
         />
         {searchResults.length > 0 && (
           <div className="absolute z-10 mt-1 w-full max-w-md bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-y-auto">
@@ -379,43 +372,41 @@ export default function ETFCompare() {
       {selectedTickers.length > 0 && (
         <div className="flex flex-wrap gap-2 mb-4">
           {selectedTickers.map((ticker, idx) => (
-            <span
+            <Badge
               key={ticker}
-              className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-sm font-medium text-white"
+              className="text-sm font-medium text-white cursor-pointer"
               style={{
                 backgroundColor: LINE_COLORS[idx % LINE_COLORS.length],
               }}
+              onClick={() => removeTicker(ticker)}
             >
               {tickerNames[ticker] || ticker}
-              <button
-                onClick={() => removeTicker(ticker)}
-                className="ml-1 hover:opacity-70 text-white font-bold"
-              >
-                x
-              </button>
-            </span>
+              <span className="ml-1 font-bold">x</span>
+            </Badge>
           ))}
         </div>
       )}
 
       {/* Chart */}
       {selectedTickers.length > 0 && (
-        <div className="mb-6 border border-gray-200 rounded-lg p-4 bg-white">
-          <h2 className="text-lg font-semibold mb-3 text-gray-800">
-            수익률 비교 차트 (%)
-          </h2>
-          {loading ? (
-            <div className="h-[400px] bg-gray-100 rounded animate-pulse flex items-center justify-center text-gray-400">
-              차트 로딩 중...
-            </div>
-          ) : (
-            <OverlayChart
-              priceData={priceData}
-              tickers={selectedTickers}
-              tickerNames={tickerNames}
-            />
-          )}
-        </div>
+        <Card className="mb-6">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-lg">수익률 비교 차트 (%)</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {loading ? (
+              <div className="h-[400px] bg-gray-100 rounded animate-pulse flex items-center justify-center text-gray-400">
+                차트 로딩 중...
+              </div>
+            ) : (
+              <OverlayChart
+                priceData={priceData}
+                tickers={selectedTickers}
+                tickerNames={tickerNames}
+              />
+            )}
+          </CardContent>
+        </Card>
       )}
 
       {/* Comparison table */}
@@ -424,27 +415,22 @@ export default function ETFCompare() {
           <h2 className="text-lg font-semibold mb-3 text-gray-800">
             수익률 비교
           </h2>
-          <div className="overflow-x-auto border border-gray-200 rounded-lg">
-            <table className="w-full text-sm">
-              <thead className="bg-gray-50 border-b border-gray-200">
-                <tr>
-                  <th className="text-left px-3 py-2 font-semibold text-gray-700">
-                    ETF
-                  </th>
+          <div className="border border-gray-200 rounded-lg">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>ETF</TableHead>
                   {RETURN_LABELS.map(({ key, label }) => (
-                    <th
-                      key={key}
-                      className="text-right px-3 py-2 font-semibold text-gray-700"
-                    >
+                    <TableHead key={key} className="text-right">
                       {label}
-                    </th>
+                    </TableHead>
                   ))}
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100">
+                </TableRow>
+              </TableHeader>
+              <TableBody>
                 {compareData.map((item, idx) => (
-                  <tr key={item.ticker} className="hover:bg-gray-50">
-                    <td className="px-3 py-2">
+                  <TableRow key={item.ticker}>
+                    <TableCell>
                       <div className="flex items-center gap-2">
                         <div
                           className="w-3 h-3 rounded-full flex-shrink-0"
@@ -460,21 +446,21 @@ export default function ETFCompare() {
                           {item.ticker}
                         </span>
                       </div>
-                    </td>
+                    </TableCell>
                     {RETURN_LABELS.map(({ key }) => (
-                      <td
+                      <TableCell
                         key={key}
-                        className={`px-3 py-2 text-right font-mono ${returnColor(
+                        className={`text-right font-mono ${returnColor(
                           item.returns[key]
                         )}`}
                       >
                         {formatReturn(item.returns[key])}
-                      </td>
+                      </TableCell>
                     ))}
-                  </tr>
+                  </TableRow>
                 ))}
-              </tbody>
-            </table>
+              </TableBody>
+            </Table>
           </div>
         </div>
       )}
@@ -485,68 +471,68 @@ export default function ETFCompare() {
           <h2 className="text-lg font-semibold mb-3 text-gray-800">
             보유 종목 겹침 분석
           </h2>
-          <div className="bg-white border border-gray-200 rounded-lg p-4 mb-4">
-            <div className="flex flex-wrap gap-4 text-sm">
-              <div className="bg-blue-50 rounded-lg px-4 py-2">
-                <span className="text-gray-600">공통 종목</span>
-                <span className="ml-2 font-bold text-blue-700">
-                  {overlapData.common_count}개
-                </span>
+          <Card className="mb-4">
+            <CardContent className="p-4">
+              <div className="flex flex-wrap gap-4 text-sm">
+                <div className="bg-blue-50 rounded-lg px-4 py-2">
+                  <span className="text-gray-600">공통 종목</span>
+                  <span className="ml-2 font-bold text-blue-700">
+                    {overlapData.common_count}개
+                  </span>
+                </div>
+                <div className="bg-gray-50 rounded-lg px-4 py-2">
+                  <span className="text-gray-600">
+                    {tickerNames[selectedTickers[0]] || selectedTickers[0]} 전용
+                  </span>
+                  <span className="ml-2 font-bold text-gray-700">
+                    {overlapData.only_a_count}개
+                  </span>
+                </div>
+                <div className="bg-gray-50 rounded-lg px-4 py-2">
+                  <span className="text-gray-600">
+                    {tickerNames[selectedTickers[1]] || selectedTickers[1]} 전용
+                  </span>
+                  <span className="ml-2 font-bold text-gray-700">
+                    {overlapData.only_b_count}개
+                  </span>
+                </div>
+                <div className="bg-green-50 rounded-lg px-4 py-2">
+                  <span className="text-gray-600">겹침 비중</span>
+                  <span className="ml-2 font-bold text-green-700">
+                    A: {overlapData.total_overlap_weight_a.toFixed(1)}%, B:{" "}
+                    {overlapData.total_overlap_weight_b.toFixed(1)}%
+                  </span>
+                </div>
               </div>
-              <div className="bg-gray-50 rounded-lg px-4 py-2">
-                <span className="text-gray-600">
-                  {tickerNames[selectedTickers[0]] || selectedTickers[0]} 전용
-                </span>
-                <span className="ml-2 font-bold text-gray-700">
-                  {overlapData.only_a_count}개
-                </span>
-              </div>
-              <div className="bg-gray-50 rounded-lg px-4 py-2">
-                <span className="text-gray-600">
-                  {tickerNames[selectedTickers[1]] || selectedTickers[1]} 전용
-                </span>
-                <span className="ml-2 font-bold text-gray-700">
-                  {overlapData.only_b_count}개
-                </span>
-              </div>
-              <div className="bg-green-50 rounded-lg px-4 py-2">
-                <span className="text-gray-600">겹침 비중</span>
-                <span className="ml-2 font-bold text-green-700">
-                  A: {overlapData.total_overlap_weight_a.toFixed(1)}%, B:{" "}
-                  {overlapData.total_overlap_weight_b.toFixed(1)}%
-                </span>
-              </div>
-            </div>
-          </div>
+            </CardContent>
+          </Card>
           {overlapData.overlap.length > 0 && (
-            <div className="overflow-x-auto border border-gray-200 rounded-lg">
-              <table className="w-full text-sm">
-                <thead className="bg-gray-50 border-b border-gray-200">
-                  <tr>
-                    <th className="text-left px-3 py-2 font-semibold text-gray-700">
-                      종목명
-                    </th>
-                    <th className="text-right px-3 py-2 font-semibold text-gray-700">
+            <div className="border border-gray-200 rounded-lg">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>종목명</TableHead>
+                    <TableHead className="text-right">
                       {tickerNames[selectedTickers[0]] || selectedTickers[0]} 비중
-                    </th>
-                    <th className="px-3 py-2 w-40" />
-                    <th className="text-right px-3 py-2 font-semibold text-gray-700">
+                    </TableHead>
+                    <TableHead className="w-40" />
+                    <TableHead className="text-right">
                       {tickerNames[selectedTickers[1]] || selectedTickers[1]} 비중
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-100">
+                    </TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
                   {overlapData.overlap.slice(0, 20).map((item) => {
                     const maxW = Math.max(item.weight_a, item.weight_b);
                     return (
-                      <tr key={item.stock_name} className="hover:bg-gray-50">
-                        <td className="px-3 py-2 text-gray-900">
+                      <TableRow key={item.stock_name}>
+                        <TableCell className="text-gray-900">
                           {item.stock_name}
-                        </td>
-                        <td className="px-3 py-2 text-right font-mono text-gray-700">
+                        </TableCell>
+                        <TableCell className="text-right font-mono text-gray-700">
                           {item.weight_a.toFixed(2)}%
-                        </td>
-                        <td className="px-3 py-2">
+                        </TableCell>
+                        <TableCell>
                           <div className="flex items-center gap-1 h-4">
                             <div className="flex-1 flex justify-end">
                               <div
@@ -565,15 +551,15 @@ export default function ETFCompare() {
                               />
                             </div>
                           </div>
-                        </td>
-                        <td className="px-3 py-2 text-right font-mono text-gray-700">
+                        </TableCell>
+                        <TableCell className="text-right font-mono text-gray-700">
                           {item.weight_b.toFixed(2)}%
-                        </td>
-                      </tr>
+                        </TableCell>
+                      </TableRow>
                     );
                   })}
-                </tbody>
-              </table>
+                </TableBody>
+              </Table>
             </div>
           )}
         </div>
@@ -583,13 +569,13 @@ export default function ETFCompare() {
       {sectorCompareRows.length > 0 && (
         <div className="mb-6">
           <h2 className="text-lg font-semibold mb-3 text-gray-800">섹터 비교</h2>
-          <div className="overflow-x-auto border border-gray-200 rounded-lg">
-            <table className="w-full text-sm">
-              <thead className="bg-gray-50 border-b border-gray-200">
-                <tr>
-                  <th className="text-left px-3 py-2 font-semibold text-gray-700">섹터</th>
+          <div className="border border-gray-200 rounded-lg">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>섹터</TableHead>
                   {selectedTickers.map((t, idx) => (
-                    <th key={t} className="text-right px-3 py-2 font-semibold text-gray-700">
+                    <TableHead key={t} className="text-right">
                       <div className="flex items-center justify-end gap-1.5">
                         <div
                           className="w-2.5 h-2.5 rounded-full flex-shrink-0"
@@ -597,22 +583,22 @@ export default function ETFCompare() {
                         />
                         <span className="truncate max-w-[120px]">{tickerNames[t] || t}</span>
                       </div>
-                    </th>
+                    </TableHead>
                   ))}
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100">
+                </TableRow>
+              </TableHeader>
+              <TableBody>
                 {sectorCompareRows.map((row) => (
-                  <tr key={row.code} className="hover:bg-gray-50">
-                    <td className="px-3 py-2 font-medium text-gray-700">{row.name}</td>
+                  <TableRow key={row.code}>
+                    <TableCell className="font-medium text-gray-700">{row.name}</TableCell>
                     {selectedTickers.map((t) => {
                       const w = row.weights[t] ?? 0;
                       const maxInRow = row.maxWeight;
                       const intensity = maxInRow > 0 ? Math.round((w / maxInRow) * 100) : 0;
                       return (
-                        <td
+                        <TableCell
                           key={t}
-                          className="px-3 py-2 text-right font-mono"
+                          className="text-right font-mono"
                           style={{
                             backgroundColor: w > 0
                               ? `rgba(37, 99, 235, ${intensity / 400 + 0.03})`
@@ -620,13 +606,13 @@ export default function ETFCompare() {
                           }}
                         >
                           {w > 0 ? `${w.toFixed(1)}%` : "-"}
-                        </td>
+                        </TableCell>
                       );
                     })}
-                  </tr>
+                  </TableRow>
                 ))}
-              </tbody>
-            </table>
+              </TableBody>
+            </Table>
           </div>
           <p className="text-xs text-gray-400 mt-2">
             * 출처: 네이버 금융 ETF 분석. 셀 색상이 진할수록 해당 행에서 비중이 높습니다.
