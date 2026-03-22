@@ -127,6 +127,7 @@ export default function Portfolio() {
   const [portfolio, setPortfolio] = useState<PortfolioETF[]>([]);
   const [result, setResult] = useState<AnalysisResult | null>(null);
   const [correlation, setCorrelation] = useState<CorrelationResponse | null>(null);
+  const [years, setYears] = useState(1);
   const [analyzing, setAnalyzing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const mountedRef = useRef(true);
@@ -235,8 +236,8 @@ export default function Portfolio() {
 
       // 포트폴리오 분석 + 상관관계 동시 요청
       const [analysisRes, corrRes] = await Promise.allSettled([
-        api.analyzePortfolio(items),
-        tickers.length >= 2 ? api.getPortfolioCorrelation(tickers) : Promise.resolve(null),
+        api.analyzePortfolio(items, years),
+        tickers.length >= 2 ? api.getPortfolioCorrelation(tickers, years) : Promise.resolve(null),
       ]);
 
       if (mountedRef.current) {
@@ -418,6 +419,21 @@ export default function Portfolio() {
                 >
                   {analyzing ? "분석 중..." : "분석"}
                 </button>
+              </div>
+              <div className="flex gap-1 mt-2">
+                {[1, 3, 5].map((y) => (
+                  <button
+                    key={y}
+                    onClick={() => setYears(y)}
+                    className={`flex-1 px-2 py-1.5 text-xs rounded transition ${
+                      years === y
+                        ? "bg-gray-800 text-white"
+                        : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                    }`}
+                  >
+                    {y}년
+                  </button>
+                ))}
               </div>
             )}
 

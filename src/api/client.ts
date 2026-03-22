@@ -97,21 +97,21 @@ export const api = {
   getTopVolume: (date: string, limit = 10) =>
     fetchJSON<Array<{ticker: string; date: string; open: number; high: number; low: number; close: number; volume: number}>>(`/api/prices/top-volume?target_date=${date}&limit=${limit}`),
 
-  analyzePortfolio: (items: Array<{ticker: string; weight: number}>) =>
+  analyzePortfolio: (items: Array<{ticker: string; weight: number}>, years = 1) =>
     fetch(`${BASE_URL}/api/portfolio/analyze`, {
       method: "POST",
       headers: {"Content-Type": "application/json"},
-      body: JSON.stringify({ items }),
+      body: JSON.stringify({ items, years }),
     }).then(res => {
       if (!res.ok) throw new Error(`API error: ${res.status}`);
       return res.json();
     }),
 
-  getPortfolioCorrelation: (tickers: string[]): Promise<CorrelationResponse> =>
+  getPortfolioCorrelation: (tickers: string[], years = 1): Promise<CorrelationResponse> =>
     fetch(`${BASE_URL}/api/portfolio/correlation`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ tickers }),
+      body: JSON.stringify({ tickers, years }),
     }).then((res) => {
       if (!res.ok) throw new Error(`API error: ${res.status}`);
       return res.json();
