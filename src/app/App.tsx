@@ -7,6 +7,7 @@ import Company from "@/pages/Company";
 import Market from "@/pages/Market";
 import About from "@/pages/About";
 import Portfolio from "@/pages/Portfolio";
+import Druckenmiller from "@/pages/Druckenmiller";
 
 function NavLink({ to, children }: { to: string; children: React.ReactNode }) {
   const location = useLocation();
@@ -39,6 +40,7 @@ function Layout() {
           <NavLink to="/dividend">배당</NavLink>
           <NavLink to="/portfolio">포트폴리오</NavLink>
           <NavLink to="/market">시장</NavLink>
+          <NavLink to="/agent">에이전트</NavLink>
           <NavLink to="/about">안내</NavLink>
         </div>
       </nav>
@@ -50,6 +52,7 @@ function Layout() {
         <Route path="/portfolio" element={<Portfolio />} />
         <Route path="/market" element={<Market />} />
         <Route path="/company/:name" element={<Company />} />
+        <Route path="/agent" element={<Druckenmiller />} />
         <Route path="/about" element={<About />} />
       </Routes>
     </div>

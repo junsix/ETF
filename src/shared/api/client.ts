@@ -117,6 +117,21 @@ export const api = {
       return res.json();
     }),
 
+  getDruckenmiller: () =>
+    fetchJSON<{
+      overall: string;
+      overall_text: string;
+      stance: string;
+      signals: Array<{ type: string; text: string }>;
+      recommendations: Array<{
+        category: string;
+        direction: string;
+        reason: string;
+        examples: string;
+      }>;
+      macro_snapshot: Record<string, number>;
+    }>("/api/druckenmiller"),
+
   getMarketIndicators: () =>
     fetchJSON<{
       indices: Array<{
