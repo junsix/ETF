@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { Link } from "react-router-dom";
+import ReactMarkdown from "react-markdown";
 import { api } from "@/shared/api/client";
 import { Card, CardHeader, CardTitle, CardContent } from "@/shared/ui/card";
 import { Button } from "@/shared/ui/button";
@@ -569,8 +570,8 @@ export default function Druckenmiller() {
             </div>
           )}
           {aiText && (
-            <div className="prose prose-sm max-w-none text-gray-800 leading-relaxed whitespace-pre-wrap">
-              {aiText}
+            <div className="prose prose-sm max-w-none text-gray-800 leading-relaxed">
+              <ReactMarkdown>{aiText}</ReactMarkdown>
               {aiLoading && <span className="animate-pulse">▌</span>}
             </div>
           )}
