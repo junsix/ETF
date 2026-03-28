@@ -1,7 +1,8 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import { Link } from "react-router-dom";
 import { api } from "@/shared/api/client";
 import { Card, CardHeader, CardTitle, CardContent } from "@/shared/ui/card";
+import { Button } from "@/shared/ui/button";
 import { Badge } from "@/shared/ui/badge";
 import {
   Table,
@@ -421,6 +422,59 @@ export default function Druckenmiller() {
   const [error, setError] = useState<string | null>(null);
   const [quoteIndex, setQuoteIndex] = useState(0);
 
+  // AI analysis streaming state
+  const [aiText, setAiText] = useState("");
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiError, setAiError] = useState<string | null>(null);
+  const eventSourceRef = useRef<EventSource | null>(null);
+
+  const startAiAnalysis = useCallback(() => {
+    // Close any existing connection
+    if (eventSourceRef.current) {
+      eventSourceRef.current.close();
+    }
+
+    setAiText("");
+    setAiLoading(true);
+    setAiError(null);
+
+    const BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8080";
+    const eventSource = new EventSource(`${BASE_URL}/api/druckenmiller/ai-analysis`);
+    eventSourceRef.current = eventSource;
+
+    eventSource.onmessage = (event) => {
+      const data = JSON.parse(event.data);
+      if (data.done) {
+        setAiLoading(false);
+        eventSource.close();
+        eventSourceRef.current = null;
+      } else if (data.error) {
+        setAiError(data.error);
+        setAiLoading(false);
+        eventSource.close();
+        eventSourceRef.current = null;
+      } else if (data.text) {
+        setAiText((prev) => prev + data.text);
+      }
+    };
+
+    eventSource.onerror = () => {
+      setAiError("연결이 끊어졌습니다");
+      setAiLoading(false);
+      eventSource.close();
+      eventSourceRef.current = null;
+    };
+  }, []);
+
+  // Cleanup EventSource on unmount
+  useEffect(() => {
+    return () => {
+      if (eventSourceRef.current) {
+        eventSourceRef.current.close();
+      }
+    };
+  }, []);
+
   useEffect(() => {
     let cancelled = false;
     setLoading(true);
@@ -490,6 +544,44 @@ export default function Druckenmiller() {
               </Badge>
             ))}
           </div>
+        </CardContent>
+      </Card>
+
+      {/* AI Analysis Section */}
+      <Card className="border-purple-200">
+        <CardHeader className="pb-2">
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-base">AI 심층 분석</CardTitle>
+            <Button
+              size="sm"
+              onClick={startAiAnalysis}
+              disabled={aiLoading || !data}
+              className="bg-purple-600 hover:bg-purple-700"
+            >
+              {aiLoading ? "분석 중..." : "AI 분석 시작"}
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent>
+          {aiLoading && !aiText && (
+            <div className="animate-pulse text-gray-400 text-sm">
+              매크로 데이터를 분석하고 있습니다...
+            </div>
+          )}
+          {aiText && (
+            <div className="prose prose-sm max-w-none text-gray-800 leading-relaxed whitespace-pre-wrap">
+              {aiText}
+              {aiLoading && <span className="animate-pulse">▌</span>}
+            </div>
+          )}
+          {aiError && (
+            <div className="text-red-600 text-sm">{aiError}</div>
+          )}
+          {!aiText && !aiLoading && !aiError && (
+            <p className="text-sm text-gray-400">
+              버튼을 누르면 현재 매크로 데이터를 기반으로 드러켄밀러 관점의 심층 분석을 AI가 생성합니다.
+            </p>
+          )}
         </CardContent>
       </Card>
 
